@@ -1,0 +1,27 @@
+# AI Engineer Challenge Frontend Architecture
+
+## Table of Contents
+
+- [AI Engineer Challenge Frontend Architecture](#table-of-contents)
+  - [Section 1: Template and Framework Selection](./section-1-template-and-framework-selection.md)
+    - [1.1 Analysis of Existing Project](./section-1-template-and-framework-selection.md#11-analysis-of-existing-project)
+    - [1.2 Change Log](./section-1-template-and-framework-selection.md#12-change-log)
+  - [Section 2: Frontend Tech Stack](./section-2-frontend-tech-stack.md)
+  - [Section 3: Project Structure](./section-3-project-structure.md)
+  - [Section 4: Component Standards](./section-4-component-standards.md)
+    - [4.1 Component Template](./section-4-component-standards.md#41-component-template)
+    - [4.2 Naming Conventions](./section-4-component-standards.md#42-naming-conventions)
+  - [Section 5: State Management](./section-5-state-management.md)
+    - [5.1 State Management Approach](./section-5-state-management.md#51-state-management-approach)
+    - [5.2 State Management Template ()](./section-5-state-management.md#52-state-management-template)
+  - [Section 6: API Integration](./section-6-api-integration.md)
+    - [6.1 API Service Layer](./section-6-api-integration.md#61-api-service-layer)
+    - [6.2 Service Template ()](./section-6-api-integration.md#62-service-template)
+  - [Section 7: Routing](./section-7-routing.md)
+    - [7.1 Route Configuration](./section-7-routing.md#71-route-configuration)
+  - [Section 8: Styling Guidelines](./section-8-styling-guidelines.md)
+    - [8.1 Styling Approach](./section-8-styling-guidelines.md#81-styling-approach)
+    - [8.2 Global Theme Configuration ()](./section-8-styling-guidelines.md#82-global-theme-configuration)
+  - [Section 9: Testing Requirements](./section-9-testing-requirements.md)
+    - [9.1 Component Test Template](./section-9-testing-requirements.md#91-component-test-template)
+    - [9.3 Testing Best Practices](./section-9-testing-requirements.md#93-testing-best-practices)
