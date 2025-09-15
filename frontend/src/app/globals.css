@@ -1,53 +1,82 @@
 @import "tailwindcss";
 
-@theme {
-  --color-background: 0 0% 98%;
-  --color-foreground: 0 0% 15%;
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 0 0% 15%;
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 0 0% 15%;
-  --color-primary: 174 100% 29%;
-  --color-primary-foreground: 0 0% 100%;
-  --color-secondary: 0 0% 96%;
-  --color-secondary-foreground: 0 0% 15%;
-  --color-muted: 0 0% 96%;
-  --color-muted-foreground: 0 0% 45%;
-  --color-accent: 174 100% 29%;
-  --color-accent-foreground: 0 0% 100%;
-  --color-destructive: 0 84% 60%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 0 0% 90%;
-  --color-input: 0 0% 90%;
-  --color-ring: 174 100% 29%;
-  --radius: 0.5rem;
-  
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+/* Force light theme colors directly */
+* {
+  border-color: hsl(0 0% 90%);
 }
 
-@theme dark {
-  --color-background: 222.2 84% 4.9%;
-  --color-foreground: 210 40% 98%;
-  --color-card: 222.2 84% 4.9%;
-  --color-card-foreground: 210 40% 98%;
-  --color-popover: 222.2 84% 4.9%;
-  --color-popover-foreground: 210 40% 98%;
-  --color-primary: 174 70% 45%;
-  --color-primary-foreground: 0 0% 100%;
-  --color-secondary: 210 10% 20%;
-  --color-secondary-foreground: 210 40% 98%;
-  --color-muted: 210 10% 20%;
-  --color-muted-foreground: 210 40% 63%;
-  --color-accent: 174 70% 45%;
-  --color-accent-foreground: 0 0% 100%;
-  --color-destructive: 0 62.8% 30.6%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 210 10% 25%;
-  --color-input: 210 10% 25%;
-  --color-ring: 174 70% 45%;
+html {
+  color-scheme: light !important;
 }
 
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #fafafa !important;
+  color: #262626 !important;
+}
+
+/* Override all background and text colors */
+.bg-background {
+  background-color: #fafafa !important;
+}
+
+.text-foreground {
+  color: #262626 !important;
+}
+
+.bg-card {
+  background-color: #ffffff !important;
+}
+
+.text-card-foreground {
+  color: #262626 !important;
+}
+
+.bg-primary {
+  background-color: #0d9488 !important;
+}
+
+.text-primary-foreground {
+  color: #ffffff !important;
+}
+
+.bg-secondary {
+  background-color: #f5f5f5 !important;
+}
+
+.text-secondary-foreground {
+  color: #262626 !important;
+}
+
+.bg-muted {
+  background-color: #f5f5f5 !important;
+}
+
+.text-muted-foreground {
+  color: #737373 !important;
+}
+
+.border-border {
+  border-color: #e5e5e5 !important;
+}
+
+.border-input {
+  border-color: #e5e5e5 !important;
+}
+
+.focus-within\:ring-ring:focus-within {
+  --tw-ring-color: #0d9488 !important;
+}
+
+.focus-visible\:ring-ring:focus-visible {
+  --tw-ring-color: #0d9488 !important;
+}
+
+.shadow-soft {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Accordion animations */
 @keyframes accordion-down {
   from { height: 0; }
   to { height: var(--radix-accordion-content-height); }
@@ -58,12 +87,10 @@
   to { height: 0; }
 }
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  background: hsl(var(--color-background));
-  color: hsl(var(--color-foreground));
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
 }
 
-.shadow-soft {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
 }

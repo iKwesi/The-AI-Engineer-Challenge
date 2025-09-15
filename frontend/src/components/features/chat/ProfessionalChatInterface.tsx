@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/Accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { Label } from "@/components/ui/Label";
@@ -22,10 +21,10 @@ export interface ProfessionalChatInterfaceProps {
   setApiKey: (key: string) => void;
 }
 
-const MessageBubble: React.FC<{ message: Message, isOnlyMessage?: boolean }> = ({ message, isOnlyMessage }) => {
+const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === 'user';
   return (
-    <div className={cn("flex items-start gap-3 w-full", isUser ? "justify-end" : "justify-start", isOnlyMessage ? "justify-center" : "")}>
+    <div className={cn("flex items-start gap-3 w-full", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <Avatar className="w-8 h-8 border">
           <AvatarFallback><Bot className="w-5 h-5" /></AvatarFallback>
@@ -36,8 +35,7 @@ const MessageBubble: React.FC<{ message: Message, isOnlyMessage?: boolean }> = (
           "max-w-xl rounded-lg px-4 py-3 shadow-soft",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground",
-          isOnlyMessage ? "text-center" : ""
+            : "bg-secondary text-secondary-foreground"
         )}
       >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -72,6 +70,25 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Track if textarea is multi-line
+  const isMultiLine = inputValue.includes('\n') || (textareaRef.current && textareaRef.current.scrollHeight > textareaRef.current.clientHeight);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -101,48 +118,142 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     }
   };
 
+  // Check if we should show the welcome screen (no messages yet)
+  const showWelcomeScreen = messages.length === 0;
+
+  if (showWelcomeScreen) {
+    // Welcome screen layout - centered like ChatGPT
+    return (
+      <div className="flex flex-col h-screen bg-background text-foreground">
+        <header className="border-b bg-card p-4 shadow-sm">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <h1 className="text-xl font-semibold">AI Chat</h1>
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="ghost"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 text-sm"
+              >
+                <Settings className="w-4 h-4" />
+                Configuration
+                <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+              </Button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="api-key-welcome">API Key</Label>
+                    <div className="flex items-center gap-2">
+                       <KeyRound className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="api-key-welcome"
+                        type="password"
+                        placeholder="Enter your API key"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="rounded-md"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                     <Label htmlFor="model-welcome">Model</Label>
+                    <Input id="model-welcome" type="text" value="Default Model" disabled className="rounded-md" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Centered welcome content */}
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
+          <div className="max-w-2xl w-full text-center space-y-8">
+            <h2 className="text-3xl font-semibold text-foreground">
+              What's on the agenda today?
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="w-full">
+              <div className={cn(
+                "relative border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex items-center",
+                isMultiLine ? "rounded-lg items-end" : "rounded-full"
+              )}>
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask me anything"
+                  className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
+                  aria-label="Chat input"
+                />
+                <Button 
+                  type="submit" 
+                  size="icon" 
+                  disabled={loading || !inputValue.trim()} 
+                  aria-label="Send message"
+                  className={cn(
+                    "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
+                    isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2"
+                  )}
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Chat conversation layout - current layout when messages exist
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="border-b bg-card p-4 shadow-sm">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">AI Chat</h1>
-          <Accordion type="single" collapsible className="w-full mt-2">
-            <AccordionItem value="item-1" className="border-none">
-              <AccordionTrigger className="text-sm py-2 hover:no-underline [&[data-state=open]>svg]:text-primary">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
-                  Configuration
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pt-4 space-y-4 px-1">
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 text-sm"
+            >
+              <Settings className="w-4 h-4" />
+              Configuration
+              <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+            </Button>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="api-key">API Key</Label>
+                  <Label htmlFor="api-key-chat">API Key</Label>
                   <div className="flex items-center gap-2">
                      <KeyRound className="w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="api-key"
+                      id="api-key-chat"
                       type="password"
                       placeholder="Enter your API key"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="rounded-full"
+                      className="rounded-md"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                   <Label htmlFor="model">Model</Label>
-                  <Input id="model" type="text" value="Default Model" disabled className="rounded-full" />
+                   <Label htmlFor="model-chat">Model</Label>
+                  <Input id="model-chat" type="text" value="Default Model" disabled className="rounded-md" />
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      <div ref={scrollAreaRef} className="flex-grow overflow-y-auto p-4 md:p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div ref={scrollAreaRef} className="flex-grow overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
           {messages.map((msg, index) => (
-            <MessageBubble key={index} message={msg} isOnlyMessage={messages.length === 1} />
+            <MessageBubble key={index} message={msg} />
           ))}
           {loading && <LoadingIndicator />}
           {error && (
@@ -159,9 +270,12 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit}
-            className="flex items-end gap-2"
+            className="flex items-end"
           >
-            <div className="relative flex-grow border border-input rounded-full focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex items-center pr-3">
+            <div className={cn(
+              "relative flex-grow border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex items-center",
+              isMultiLine ? "rounded-lg items-end" : "rounded-full"
+            )}>
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -169,19 +283,22 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask me anything"
-                className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 text-base md:text-sm"
+                className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
                 aria-label="Chat input"
               />
+              <Button 
+                type="submit" 
+                size="icon" 
+                disabled={loading || !inputValue.trim()} 
+                aria-label="Send message"
+                className={cn(
+                  "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
+                  isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2"
+                )}
+              >
+                <ArrowUp className="w-4 h-4" />
+              </Button>
             </div>
-            <Button 
-              type="submit" 
-              size="icon" 
-              disabled={loading || !inputValue.trim()} 
-              aria-label="Send message"
-              className="h-10 w-10 flex-shrink-0 rounded-full"
-            >
-              <ArrowUp className="w-5 h-5" />
-            </Button>
           </form>
         </div>
       </footer>

@@ -9,9 +9,7 @@ export interface Message {
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Ask me anything" },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
