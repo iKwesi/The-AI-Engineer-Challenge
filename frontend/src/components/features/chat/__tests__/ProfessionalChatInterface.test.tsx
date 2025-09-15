@@ -237,14 +237,16 @@ describe('ProfessionalChatInterface', () => {
       await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
       await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
       
-      const messageInput = screen.getByLabelText(/your message/i);
+      const messageInput = screen.getByLabelText(/your message/i) as HTMLTextAreaElement;
       await user.type(messageInput, 'Test user message');
       
-      // Focus on the textarea and trigger keyboard shortcut
-      messageInput.focus();
+      // Trigger keyboard shortcut using fireEvent for more reliable testing
+      await user.click(messageInput);
       await user.keyboard('{Meta>}{Enter}{/Meta}');
       
-      expect(mockSendChat).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockSendChat).toHaveBeenCalled();
+      });
     });
 
     it('supports keyboard shortcut (Ctrl+Enter)', async () => {
@@ -256,14 +258,16 @@ describe('ProfessionalChatInterface', () => {
       await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
       await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
       
-      const messageInput = screen.getByLabelText(/your message/i);
+      const messageInput = screen.getByLabelText(/your message/i) as HTMLTextAreaElement;
       await user.type(messageInput, 'Test user message');
       
-      // Focus on the textarea and trigger keyboard shortcut
-      messageInput.focus();
+      // Trigger keyboard shortcut using fireEvent for more reliable testing
+      await user.click(messageInput);
       await user.keyboard('{Control>}{Enter}{/Control}');
       
-      expect(mockSendChat).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockSendChat).toHaveBeenCalled();
+      });
     });
   });
 
@@ -447,8 +451,9 @@ describe('ProfessionalChatInterface', () => {
       const textarea = screen.getByLabelText(/your message/i);
       await user.type(textarea, 'Hello');
       
-      // Look for the character count in the flex container
-      expect(screen.getByText('5/4000')).toBeInTheDocument();
+      // Look for the character count - it's split across elements
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('/4000')).toBeInTheDocument();
     });
 
     it('updates character count as user types', async () => {
@@ -458,10 +463,12 @@ describe('ProfessionalChatInterface', () => {
       const textarea = screen.getByLabelText(/your message/i);
       
       await user.type(textarea, 'Hello World');
-      expect(screen.getByText('11/4000')).toBeInTheDocument();
+      expect(screen.getByText('11')).toBeInTheDocument();
+      expect(screen.getByText('/4000')).toBeInTheDocument();
       
       await user.type(textarea, '!');
-      expect(screen.getByText('12/4000')).toBeInTheDocument();
+      expect(screen.getByText('12')).toBeInTheDocument();
+      expect(screen.getByText('/4000')).toBeInTheDocument();
     });
   });
 
