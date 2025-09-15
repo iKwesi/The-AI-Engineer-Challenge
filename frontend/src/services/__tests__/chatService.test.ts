@@ -36,7 +36,6 @@ describe('chatService', () => {
 
   describe('initiateChatStream', () => {
     const validChatRequest: ChatRequest = {
-      developerMessage: 'You are a helpful assistant',
       userMessage: 'Hello, world!',
       model: 'gpt-3.5-turbo',
       apiKey: 'test-api-key',
@@ -49,7 +48,6 @@ describe('chatService', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          developer_message: 'You are a helpful assistant',
           user_message: 'Hello, world!',
           model: 'gpt-3.5-turbo',
           api_key: 'test-api-key',
@@ -178,7 +176,6 @@ describe('chatService', () => {
 
   describe('processStreamingChat', () => {
     const validChatRequest: ChatRequest = {
-      developerMessage: 'You are a helpful assistant',
       userMessage: 'Hello, world!',
       model: 'gpt-3.5-turbo',
       apiKey: 'test-api-key',
@@ -238,7 +235,6 @@ describe('chatService', () => {
 
   describe('sendChatRequest', () => {
     const validChatRequest: ChatRequest = {
-      developerMessage: 'You are a helpful assistant',
       userMessage: 'Hello, world!',
       model: 'gpt-3.5-turbo',
       apiKey: 'test-api-key',
@@ -289,7 +285,6 @@ describe('chatService', () => {
 
   describe('API key validation', () => {
     const baseChatRequest: ChatRequest = {
-      developerMessage: 'You are a helpful assistant',
       userMessage: 'Hello, world!',
       model: 'gpt-3.5-turbo',
       apiKey: 'test-api-key',
@@ -326,7 +321,6 @@ describe('chatService', () => {
       process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api.example.com';
 
       const validChatRequest: ChatRequest = {
-        developerMessage: 'You are a helpful assistant',
         userMessage: 'Hello, world!',
         model: 'gpt-3.5-turbo',
         apiKey: 'test-api-key',
@@ -345,7 +339,6 @@ describe('chatService', () => {
       delete process.env.NEXT_PUBLIC_API_BASE_URL;
 
       const validChatRequest: ChatRequest = {
-        developerMessage: 'You are a helpful assistant',
         userMessage: 'Hello, world!',
         model: 'gpt-3.5-turbo',
         apiKey: 'test-api-key',

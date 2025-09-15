@@ -27,7 +27,6 @@ export function useChat() {
 
     // Prepare chat request
     const chatRequest: ChatRequest = {
-      developerMessage: "You are a helpful AI assistant.",
       userMessage: userMessage,
       model: "gpt-4",
       apiKey: apiKey

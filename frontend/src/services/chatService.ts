@@ -4,7 +4,6 @@
  */
 
 export interface ChatRequest {
-  developerMessage: string;
   userMessage: string;
   model: string;
   apiKey: string;
@@ -48,7 +47,6 @@ const validateChatRequest = (data: ChatRequest): void => {
  */
 const transformRequestData = (data: ChatRequest) => {
   return {
-    developer_message: data.developerMessage,
     user_message: data.userMessage,
     model: data.model,
     api_key: data.apiKey,
