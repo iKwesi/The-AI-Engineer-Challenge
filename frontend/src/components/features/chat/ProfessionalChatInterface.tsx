@@ -125,45 +125,45 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     // Welcome screen layout - centered like ChatGPT
     return (
       <div className="flex flex-col h-screen bg-background text-foreground">
-        <header className="border-b bg-card p-4 shadow-sm">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <h1 className="text-xl font-semibold">AI Chat</h1>
-            <div className="relative" ref={dropdownRef}>
-              <Button
-                variant="ghost"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 text-sm"
-              >
-                <Settings className="w-4 h-4" />
-                Configuration
-                <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
-              </Button>
-              
-              {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="api-key-welcome">API Key</Label>
-                    <div className="flex items-center gap-2">
-                       <KeyRound className="w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="api-key-welcome"
-                        type="password"
-                        placeholder="Enter your API key"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="rounded-md"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                     <Label htmlFor="model-welcome">Model</Label>
-                    <Input id="model-welcome" type="text" value="Default Model" disabled className="rounded-md" />
+      <header className="border-b bg-card p-4 shadow-sm">
+        <div className="w-full flex items-center justify-between px-4">
+          <h1 className="text-xl font-semibold">AI Chat</h1>
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 text-sm"
+            >
+              <Settings className="w-4 h-4" />
+              Configuration
+              <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+            </Button>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="api-key-welcome">API Key</Label>
+                  <div className="flex items-center gap-2">
+                     <KeyRound className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="api-key-welcome"
+                      type="password"
+                      placeholder="Enter your API key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="rounded-md"
+                    />
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="space-y-2">
+                   <Label htmlFor="model-welcome">Model</Label>
+                  <Input id="model-welcome" type="text" value="Default Model" disabled className="rounded-md" />
+                </div>
+              </div>
+            )}
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* Centered welcome content */}
         <div className="flex-grow flex flex-col items-center justify-center p-4">
@@ -223,7 +223,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="border-b bg-card p-4 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="w-full flex items-center justify-between px-4">
           <h1 className="text-xl font-semibold">AI Chat</h1>
           <div className="relative" ref={dropdownRef}>
             <Button
