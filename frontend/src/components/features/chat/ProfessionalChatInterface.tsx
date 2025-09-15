@@ -135,7 +135,7 @@ export const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps>
     if (error.includes('timeout') || error.includes('timed out')) {
       return 'Request timed out. Please check your connection and try again';
     }
-    if (error.includes('rate limit')) {
+    if (error.includes('Rate limit exceeded')) {
       return 'Rate limit exceeded. Please wait a moment and try again';
     }
     if (error.includes('HTTP error! status: 5')) {

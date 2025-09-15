@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ProfessionalChatInterface from '../ProfessionalChatInterface';
@@ -14,12 +14,17 @@ describe('ProfessionalChatInterface', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSendChat.mockClear();
     mockUseChat.mockReturnValue({
       message: '',
       loading: false,
       error: null,
       sendChat: mockSendChat,
     });
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   describe('Component Rendering', () => {
@@ -83,16 +88,12 @@ describe('ProfessionalChatInterface', () => {
   });
 
   describe('Form Validation', () => {
-    beforeEach(async () => {
+    it('validates required API key', async () => {
       const user = userEvent.setup();
       render(<ProfessionalChatInterface />);
       
       // Open configuration section
       await user.click(screen.getByText('Show Settings'));
-    });
-
-    it('validates required API key', async () => {
-      const user = userEvent.setup();
       
       // Try to submit without API key
       await user.type(screen.getByLabelText(/your message/i), 'Test message');
@@ -104,6 +105,10 @@ describe('ProfessionalChatInterface', () => {
 
     it('validates API key format', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration section
+      await user.click(screen.getByText('Show Settings'));
       
       // Enter invalid API key
       await user.type(screen.getByLabelText(/api key/i), 'invalid-key');
@@ -116,6 +121,10 @@ describe('ProfessionalChatInterface', () => {
 
     it('validates required model', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration section
+      await user.click(screen.getByText('Show Settings'));
       
       // Clear model field
       const modelInput = screen.getByLabelText(/model/i);
@@ -131,8 +140,15 @@ describe('ProfessionalChatInterface', () => {
 
     it('validates required user message', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
       
+      // Open configuration section
+      await user.click(screen.getByText('Show Settings'));
+      
+      // Fill valid API key first
       await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
+      
+      // Ensure user message is empty by not typing anything
       await user.click(screen.getByRole('button', { name: /send message/i }));
       
       expect(screen.getByText('Please enter a message')).toBeInTheDocument();
@@ -141,6 +157,10 @@ describe('ProfessionalChatInterface', () => {
 
     it('validates message length limit', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration section
+      await user.click(screen.getByText('Show Settings'));
       
       const longMessage = 'a'.repeat(4001);
       await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
@@ -153,6 +173,10 @@ describe('ProfessionalChatInterface', () => {
 
     it('clears field errors when user starts typing', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration section
+      await user.click(screen.getByText('Show Settings'));
       
       // Trigger API key error
       await user.type(screen.getByLabelText(/your message/i), 'Test message');
@@ -166,7 +190,7 @@ describe('ProfessionalChatInterface', () => {
   });
 
   describe('Form Submission', () => {
-    beforeEach(async () => {
+    it('submits form with valid data', async () => {
       const user = userEvent.setup();
       render(<ProfessionalChatInterface />);
       
@@ -174,11 +198,6 @@ describe('ProfessionalChatInterface', () => {
       await user.click(screen.getByText('Show Settings'));
       await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
       await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
-    });
-
-    it('submits form with valid data', async () => {
-      const user = userEvent.setup();
-      
       await user.type(screen.getByLabelText(/your message/i), 'Test user message');
       await user.click(screen.getByRole('button', { name: /send message/i }));
       
@@ -193,6 +212,12 @@ describe('ProfessionalChatInterface', () => {
     it('clears user message after successful submission', async () => {
       const user = userEvent.setup();
       mockSendChat.mockResolvedValue('Success');
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration and fill valid data
+      await user.click(screen.getByText('Show Settings'));
+      await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
+      await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
       
       const messageInput = screen.getByLabelText(/your message/i);
       await user.type(messageInput, 'Test user message');
@@ -205,9 +230,18 @@ describe('ProfessionalChatInterface', () => {
 
     it('supports keyboard shortcut (Cmd+Enter)', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration and fill valid data
+      await user.click(screen.getByText('Show Settings'));
+      await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
+      await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
       
       const messageInput = screen.getByLabelText(/your message/i);
       await user.type(messageInput, 'Test user message');
+      
+      // Focus on the textarea and trigger keyboard shortcut
+      messageInput.focus();
       await user.keyboard('{Meta>}{Enter}{/Meta}');
       
       expect(mockSendChat).toHaveBeenCalled();
@@ -215,9 +249,18 @@ describe('ProfessionalChatInterface', () => {
 
     it('supports keyboard shortcut (Ctrl+Enter)', async () => {
       const user = userEvent.setup();
+      render(<ProfessionalChatInterface />);
+      
+      // Open configuration and fill valid data
+      await user.click(screen.getByText('Show Settings'));
+      await user.type(screen.getByLabelText(/api key/i), 'sk-1234567890123456789012345678901234567890');
+      await user.type(screen.getByLabelText(/developer message/i), 'Test developer message');
       
       const messageInput = screen.getByLabelText(/your message/i);
       await user.type(messageInput, 'Test user message');
+      
+      // Focus on the textarea and trigger keyboard shortcut
+      messageInput.focus();
       await user.keyboard('{Control>}{Enter}{/Control}');
       
       expect(mockSendChat).toHaveBeenCalled();
@@ -370,7 +413,9 @@ describe('ProfessionalChatInterface', () => {
       const responseSection = screen.getByText('Response').closest('div');
       const responseContent = responseSection?.querySelector('.whitespace-pre-wrap');
       expect(responseContent).toBeInTheDocument();
-      expect(responseContent).toHaveTextContent('Line 1\n\nLine 3 with  spaces');
+      expect(responseContent).toHaveClass('whitespace-pre-wrap');
+      // Check the actual textContent property which preserves whitespace
+      expect(responseContent?.textContent).toBe('Line 1\n\nLine 3 with  spaces');
     });
   });
 
@@ -402,8 +447,8 @@ describe('ProfessionalChatInterface', () => {
       const textarea = screen.getByLabelText(/your message/i);
       await user.type(textarea, 'Hello');
       
-      expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('/4000')).toBeInTheDocument();
+      // Look for the character count in the flex container
+      expect(screen.getByText('5/4000')).toBeInTheDocument();
     });
 
     it('updates character count as user types', async () => {
@@ -413,12 +458,10 @@ describe('ProfessionalChatInterface', () => {
       const textarea = screen.getByLabelText(/your message/i);
       
       await user.type(textarea, 'Hello World');
-      expect(screen.getByText('11')).toBeInTheDocument();
-      expect(screen.getByText('/4000')).toBeInTheDocument();
+      expect(screen.getByText('11/4000')).toBeInTheDocument();
       
       await user.type(textarea, '!');
-      expect(screen.getByText('12')).toBeInTheDocument();
-      expect(screen.getByText('/4000')).toBeInTheDocument();
+      expect(screen.getByText('12/4000')).toBeInTheDocument();
     });
   });
 
