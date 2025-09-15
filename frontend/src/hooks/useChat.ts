@@ -28,7 +28,7 @@ export function useChat() {
     // Prepare chat request
     const chatRequest: ChatRequest = {
       userMessage: userMessage,
-      model: "gpt-4",
+      model: "gpt-4.1-mini",
       apiKey: apiKey
     };
 
