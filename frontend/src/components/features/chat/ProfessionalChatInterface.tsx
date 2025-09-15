@@ -69,7 +69,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   handleSubmit,
   apiKey,
   setApiKey,
-  model = "gpt-4o-mini",
+  model = "gpt-4.1-mini",
   setModel = () => {},
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
