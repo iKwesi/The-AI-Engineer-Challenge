@@ -122,6 +122,19 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     }
   };
 
+  // Handle Enter key in configuration inputs to collapse dropdown
+  const handleConfigKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      setIsDropdownOpen(false);
+    }
+  };
+
+  // Handle Done button click to collapse dropdown
+  const handleDoneClick = () => {
+    setIsDropdownOpen(false);
+  };
+
   // Check if we should show the welcome screen (no messages yet)
   const showWelcomeScreen = !messages || messages.length === 0;
 
@@ -155,6 +168,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                       placeholder="Enter your API key"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
                       className="rounded-md"
                     />
                   </div>
@@ -166,9 +180,19 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                     type="text" 
                     value={model} 
                     onChange={(e) => setModel(e.target.value)}
+                    onKeyDown={handleConfigKeyDown}
                     placeholder="Enter model name"
                     className="rounded-md" 
                   />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleDoneClick}
+                    size="sm"
+                    className="text-sm"
+                  >
+                    Done
+                  </Button>
                 </div>
               </div>
             )}
@@ -259,6 +283,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                       placeholder="Enter your API key"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
                       className="rounded-md"
                     />
                   </div>
@@ -270,9 +295,19 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                     type="text" 
                     value={model} 
                     onChange={(e) => setModel(e.target.value)}
+                    onKeyDown={handleConfigKeyDown}
                     placeholder="Enter model name"
                     className="rounded-md" 
                   />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleDoneClick}
+                    size="sm"
+                    className="text-sm"
+                  >
+                    Done
+                  </Button>
                 </div>
               </div>
             )}
