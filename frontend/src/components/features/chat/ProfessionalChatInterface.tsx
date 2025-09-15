@@ -19,6 +19,8 @@ export interface ProfessionalChatInterfaceProps {
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
+  model?: string;
+  setModel?: (model: string) => void;
 }
 
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
@@ -67,6 +69,8 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   handleSubmit,
   apiKey,
   setApiKey,
+  model = "gpt-4o-mini",
+  setModel = () => {},
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -157,7 +161,14 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 </div>
                 <div className="space-y-2">
                    <Label htmlFor="model-welcome">Model</Label>
-                  <Input id="model-welcome" type="text" value="Default Model" disabled className="rounded-md" />
+                  <Input 
+                    id="model-welcome" 
+                    type="text" 
+                    value={model} 
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="Enter model name"
+                    className="rounded-md" 
+                  />
                 </div>
               </div>
             )}
@@ -254,7 +265,14 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 </div>
                 <div className="space-y-2">
                    <Label htmlFor="model-chat">Model</Label>
-                  <Input id="model-chat" type="text" value="Default Model" disabled className="rounded-md" />
+                  <Input 
+                    id="model-chat" 
+                    type="text" 
+                    value={model} 
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="Enter model name"
+                    className="rounded-md" 
+                  />
                 </div>
               </div>
             )}
