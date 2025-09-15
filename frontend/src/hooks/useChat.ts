@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-interface ChatRequest {
-  developerMessage: string;
-  userMessage: string;
-  model: string;
-  apiKey: string;
-}
-
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+import { processStreamingChat, type ChatRequest } from "../services/chatService";
 
 export function useChat() {
   const [message, setMessage] = useState("");
@@ -20,31 +12,11 @@ export function useChat() {
     setMessage("");
     setError(null);
     setLoading(true);
+    
     try {
-      const response = await fetch(`${baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          developer_message: data.developerMessage,
-          user_message: data.userMessage,
-          model: data.model,
-          api_key: data.apiKey,
-        }),
+      const fullText = await processStreamingChat(data, (chunk: string) => {
+        setMessage(prev => prev + chunk);
       });
-      if (!response.body) throw new Error("No response body");
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let fullText = "";
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        if (value) {
-          const chunk = decoder.decode(value);
-          fullText += chunk;
-          setMessage(prev => prev + chunk);
-        }
-      }
       setLoading(false);
       return fullText;
     } catch (err) {
@@ -58,4 +30,4 @@ export function useChat() {
   };
 
   return { message, loading, error, sendChat };
-} 
+}
