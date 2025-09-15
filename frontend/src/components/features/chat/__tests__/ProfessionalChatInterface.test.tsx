@@ -276,14 +276,11 @@ describe('ProfessionalChatInterface', () => {
       
       render(<ProfessionalChatInterface {...defaultProps} messages={messages} />);
       
-      // Find the specific paragraph element with whitespace-pre-wrap class
-      const responseContent = screen.getByText((content, element) => {
-        return element?.tagName === 'P' && 
-               element?.textContent === 'Line 1\n\nLine 3 with  spaces' &&
-               element?.classList.contains('whitespace-pre-wrap');
-      });
-      expect(responseContent).toBeInTheDocument();
-      expect(responseContent).toHaveClass('whitespace-pre-wrap');
+      // With markdown rendering, content is now in a div with data-testid="markdown"
+      const markdownContent = screen.getByTestId('markdown');
+      expect(markdownContent).toBeInTheDocument();
+      // Our mock normalizes whitespace, so we test for the normalized content
+      expect(markdownContent).toHaveTextContent('Line 1 Line 3 with spaces');
     });
   });
 
