@@ -80,7 +80,7 @@ describe('Input Component', () => {
     render(<Input disabled />);
     const input = screen.getByRole('textbox');
     expect(input).toBeDisabled();
-    expect(input).toHaveClass('opacity-50', 'cursor-not-allowed');
+    expect(input).toHaveClass('disabled:opacity-50', 'disabled:cursor-not-allowed');
   });
 
   // Test error state
@@ -121,7 +121,7 @@ describe('Input Component', () => {
   it('has proper accessibility attributes', () => {
     render(<Input />);
     const input = screen.getByRole('textbox');
-    expect(input).toHaveClass('focus:outline-none', 'focus:ring-2', 'focus:ring-accent');
+    expect(input).toHaveClass('focus-visible:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-ring');
   });
 
   // Test label association
