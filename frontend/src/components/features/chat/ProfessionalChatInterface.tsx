@@ -74,7 +74,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Track if textarea is multi-line
-  const isMultiLine = inputValue.includes('\n') || (textareaRef.current && textareaRef.current.scrollHeight > textareaRef.current.clientHeight);
+  const isMultiLine = (inputValue && inputValue.includes('\n')) || (textareaRef.current && textareaRef.current.scrollHeight > textareaRef.current.clientHeight);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -119,7 +119,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   };
 
   // Check if we should show the welcome screen (no messages yet)
-  const showWelcomeScreen = messages.length === 0;
+  const showWelcomeScreen = !messages || messages.length === 0;
 
   if (showWelcomeScreen) {
     // Welcome screen layout - centered like ChatGPT
@@ -172,6 +172,18 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
               What's on the agenda today?
             </h2>
             
+            {/* Show loading state */}
+            {loading && <LoadingIndicator />}
+            
+            {/* Show error state */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleSubmit} className="w-full">
               <div className={cn(
                 "relative border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex items-center",
@@ -190,7 +202,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 <Button 
                   type="submit" 
                   size="icon" 
-                  disabled={loading || !inputValue.trim()} 
+                  disabled={loading || !inputValue || !inputValue.trim()} 
                   aria-label="Send message"
                   className={cn(
                     "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
@@ -289,7 +301,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
               <Button 
                 type="submit" 
                 size="icon" 
-                disabled={loading || !inputValue.trim()} 
+                disabled={loading || !inputValue || !inputValue.trim()} 
                 aria-label="Send message"
                 className={cn(
                   "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
