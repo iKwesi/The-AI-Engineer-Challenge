@@ -241,7 +241,9 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                   aria-label="Send message"
                   className={cn(
                     "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
-                    isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2"
+                    isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2",
+                    // Override cursor behavior for chat submit button specifically
+                    (loading || !inputValue || !inputValue.trim()) ? "cursor-default" : "cursor-pointer"
                   )}
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -358,7 +360,9 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 aria-label="Send message"
                 className={cn(
                   "absolute right-2 h-8 w-8 flex-shrink-0 rounded-full",
-                  isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2"
+                  isMultiLine ? "bottom-2" : "top-1/2 -translate-y-1/2",
+                  // Override cursor behavior for chat submit button specifically
+                  (loading || !inputValue || !inputValue.trim()) ? "cursor-default" : "cursor-pointer"
                 )}
               >
                 <ArrowUp className="w-4 h-4" />
