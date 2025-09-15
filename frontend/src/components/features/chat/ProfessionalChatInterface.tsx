@@ -9,6 +9,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { Label } from "@/components/ui/Label";
 import { cn } from '@/lib/utils';
 import { type Message } from '@/hooks/useChat';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];
@@ -40,7 +43,40 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
             : "bg-secondary text-secondary-foreground"
         )}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        {isUser ? (
+          // User messages: plain text with whitespace preservation
+          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        ) : (
+          // AI responses: markdown rendering with sanitization
+          <div className="text-sm prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeSanitize]}
+              components={{
+                // Customize paragraph spacing
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                // Customize list spacing
+                ul: ({ children }) => <ul className="mb-2 last:mb-0 pl-4">{children}</ul>,
+                ol: ({ children }) => <ol className="mb-2 last:mb-0 pl-4">{children}</ol>,
+                // Customize code blocks
+                code: ({ children, ...props }) => {
+                  const isInline = !props.className?.includes('language-');
+                  return isInline ? (
+                    <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                  ) : (
+                    <code className="block bg-muted p-2 rounded text-xs font-mono overflow-x-auto" {...props}>{children}</code>
+                  );
+                },
+                // Customize pre blocks
+                pre: ({ children }) => (
+                  <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2 last:mb-0">{children}</pre>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
        {isUser && (
         <Avatar className="w-8 h-8 border">
