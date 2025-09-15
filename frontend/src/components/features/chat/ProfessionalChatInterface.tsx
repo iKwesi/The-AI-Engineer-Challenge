@@ -47,29 +47,127 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           // User messages: plain text with whitespace preservation
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         ) : (
-          // AI responses: markdown rendering with sanitization
-          <div className="text-sm prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+          // AI responses: markdown rendering with professional formatting
+          <div className="text-sm max-w-none">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeSanitize]}
               components={{
-                // Customize paragraph spacing
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                // Customize list spacing
-                ul: ({ children }) => <ul className="mb-2 last:mb-0 pl-4">{children}</ul>,
-                ol: ({ children }) => <ol className="mb-2 last:mb-0 pl-4">{children}</ol>,
-                // Customize code blocks
+                // H3 headings with proper spacing and typography
+                h3: ({ children }) => (
+                  <h3 className="text-base font-semibold mt-4 mb-2 first:mt-0 text-foreground">
+                    {children}
+                  </h3>
+                ),
+                
+                // H2 headings (in case they're used)
+                h2: ({ children }) => (
+                  <h2 className="text-lg font-semibold mt-4 mb-2 first:mt-0 text-foreground">
+                    {children}
+                  </h2>
+                ),
+                
+                // H1 headings (in case they're used)
+                h1: ({ children }) => (
+                  <h1 className="text-xl font-bold mt-4 mb-3 first:mt-0 text-foreground">
+                    {children}
+                  </h1>
+                ),
+                
+                // Paragraphs with proper spacing
+                p: ({ children }) => (
+                  <p className="mb-4 last:mb-0 leading-relaxed text-foreground">
+                    {children}
+                  </p>
+                ),
+                
+                // Unordered lists with proper indentation and spacing
+                ul: ({ children }) => (
+                  <ul className="ml-6 mb-4 last:mb-0 space-y-1 list-disc">
+                    {children}
+                  </ul>
+                ),
+                
+                // Ordered lists with proper indentation and spacing
+                ol: ({ children }) => (
+                  <ol className="ml-6 mb-4 last:mb-0 space-y-1 list-decimal">
+                    {children}
+                  </ol>
+                ),
+                
+                // List items with proper spacing
+                li: ({ children }) => (
+                  <li className="mb-1 leading-relaxed text-foreground">
+                    {children}
+                  </li>
+                ),
+                
+                // Inline code with background and padding
                 code: ({ children, ...props }) => {
                   const isInline = !props.className?.includes('language-');
                   return isInline ? (
-                    <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                    <code className="bg-muted/60 px-1.5 py-0.5 rounded text-xs font-mono text-foreground border" {...props}>
+                      {children}
+                    </code>
                   ) : (
-                    <code className="block bg-muted p-2 rounded text-xs font-mono overflow-x-auto" {...props}>{children}</code>
+                    <code className="block bg-muted/80 p-3 rounded-md text-xs font-mono overflow-x-auto text-foreground border" {...props}>
+                      {children}
+                    </code>
                   );
                 },
-                // Customize pre blocks
+                
+                // Pre blocks for code blocks
                 pre: ({ children }) => (
-                  <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2 last:mb-0">{children}</pre>
+                  <pre className="bg-muted/80 p-3 rounded-md text-xs font-mono overflow-x-auto mb-4 last:mb-0 border">
+                    {children}
+                  </pre>
+                ),
+                
+                // Strong/bold text
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-foreground">
+                    {children}
+                  </strong>
+                ),
+                
+                // Emphasis/italic text
+                em: ({ children }) => (
+                  <em className="italic text-foreground">
+                    {children}
+                  </em>
+                ),
+                
+                // Blockquotes
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-muted-foreground/30 pl-4 my-4 italic text-muted-foreground">
+                    {children}
+                  </blockquote>
+                ),
+                
+                // Horizontal rules
+                hr: () => (
+                  <hr className="my-6 border-muted-foreground/20" />
+                ),
+                
+                // Tables
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-4">
+                    <table className="min-w-full border-collapse border border-muted-foreground/20">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                
+                th: ({ children }) => (
+                  <th className="border border-muted-foreground/20 px-3 py-2 bg-muted/50 font-semibold text-left">
+                    {children}
+                  </th>
+                ),
+                
+                td: ({ children }) => (
+                  <td className="border border-muted-foreground/20 px-3 py-2">
+                    {children}
+                  </td>
                 ),
               }}
             >
