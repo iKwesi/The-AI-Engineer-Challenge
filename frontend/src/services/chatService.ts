@@ -163,7 +163,7 @@ export const processStreamingChat = async (
     // Ensure reader is released on error
     try {
       reader.releaseLock();
-    } catch (releaseError) {
+    } catch {
       // Ignore release errors
     }
     throw error;

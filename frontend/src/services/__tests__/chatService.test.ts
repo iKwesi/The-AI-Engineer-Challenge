@@ -129,14 +129,14 @@ describe('chatService', () => {
   describe('readStreamChunk', () => {
     const mockDecoder = {
       decode: jest.fn(),
-    } as any;
+    } as unknown as TextDecoder;
 
     it('should read and decode a chunk successfully', async () => {
       const mockValue = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
       mockReader.read.mockResolvedValue({ value: mockValue, done: false });
-      mockDecoder.decode.mockReturnValue('Hello');
+      (mockDecoder.decode as jest.Mock).mockReturnValue('Hello');
 
-      const result = await readStreamChunk(mockReader as any, mockDecoder);
+      const result = await readStreamChunk(mockReader as unknown as ReadableStreamDefaultReader<Uint8Array>, mockDecoder);
 
       expect(result).toEqual({ chunk: 'Hello', done: false });
       expect(mockReader.read).toHaveBeenCalled();
@@ -146,7 +146,7 @@ describe('chatService', () => {
     it('should handle stream completion', async () => {
       mockReader.read.mockResolvedValue({ value: undefined, done: true });
 
-      const result = await readStreamChunk(mockReader as any, mockDecoder);
+      const result = await readStreamChunk(mockReader as unknown as ReadableStreamDefaultReader<Uint8Array>, mockDecoder);
 
       expect(result).toEqual({ chunk: '', done: true });
     });
@@ -154,7 +154,7 @@ describe('chatService', () => {
     it('should handle empty chunks', async () => {
       mockReader.read.mockResolvedValue({ value: null, done: false });
 
-      const result = await readStreamChunk(mockReader as any, mockDecoder);
+      const result = await readStreamChunk(mockReader as unknown as ReadableStreamDefaultReader<Uint8Array>, mockDecoder);
 
       expect(result).toEqual({ chunk: '', done: false });
     });
@@ -162,7 +162,7 @@ describe('chatService', () => {
     it('should handle stream reading errors', async () => {
       mockReader.read.mockRejectedValue(new Error('Stream error'));
 
-      await expect(readStreamChunk(mockReader as any, mockDecoder)).rejects.toThrow(
+      await expect(readStreamChunk(mockReader as unknown as ReadableStreamDefaultReader<Uint8Array>, mockDecoder)).rejects.toThrow(
         'Stream reading failed: Stream error'
       );
     });
@@ -170,7 +170,7 @@ describe('chatService', () => {
     it('should handle unknown stream errors', async () => {
       mockReader.read.mockRejectedValue('Unknown stream error');
 
-      await expect(readStreamChunk(mockReader as any, mockDecoder)).rejects.toThrow(
+      await expect(readStreamChunk(mockReader as unknown as ReadableStreamDefaultReader<Uint8Array>, mockDecoder)).rejects.toThrow(
         'Unknown error occurred while reading stream'
       );
     });

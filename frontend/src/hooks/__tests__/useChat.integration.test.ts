@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { useChat } from '../useChat';
@@ -99,7 +98,7 @@ describe('useChat Integration Tests', () => {
 
     it('should handle loading state during streaming', async () => {
       // Setup a delayed response to test loading state
-      let resolveRead: (value: any) => void;
+      let resolveRead: (value: { value: undefined; done: boolean }) => void;
       const readPromise = new Promise(resolve => {
         resolveRead = resolve;
       });

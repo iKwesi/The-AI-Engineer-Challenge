@@ -5,7 +5,7 @@ export interface CardProps {
   className?: string;
   padding?: 'none' | 'small' | 'medium' | 'large';
   shadow?: boolean;
-  [key: string]: any; // Allow any additional props like data-testid
+  [key: string]: unknown; // Allow any additional props like data-testid
 }
 
 export const Card: React.FC<CardProps> = ({
