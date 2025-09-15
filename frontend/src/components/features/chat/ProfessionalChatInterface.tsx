@@ -121,10 +121,37 @@ export const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps>
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      handleSubmit(e as React.FormEvent);
+      
+      // Validate form before submission
+      if (!validateForm()) {
+        return;
+      }
+
+      setIsSubmitting(true);
+      
+      try {
+        const chatRequest: ChatRequest = {
+          apiKey: formData.apiKey,
+          model: formData.model,
+          developerMessage: formData.developerMessage,
+          userMessage: formData.userMessage,
+        };
+
+        await sendChat(chatRequest);
+        
+        // Clear user message after successful submission
+        setFormData(prev => ({
+          ...prev,
+          userMessage: '',
+        }));
+      } catch {
+        // Error is handled by useChat hook
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
