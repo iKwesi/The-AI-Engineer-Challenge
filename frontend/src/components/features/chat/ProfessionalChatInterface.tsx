@@ -31,6 +31,38 @@ export interface ProfessionalChatInterfaceProps {
 
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === 'user';
+  
+  // Preprocess AI messages to convert bracket/parentheses math notation to standard LaTeX
+  const preprocessMathContent = (content: string): string => {
+    if (isUser) return content;
+    
+    let processed = content;
+    
+    // Convert square bracket notation to LaTeX delimiters
+    // Handle block math: [ ... ] -> $$ ... $$
+    processed = processed.replace(/\[\s*([^[\]]+?)\s*\]/g, (match, mathContent) => {
+      // Check if this looks like math (contains common math symbols)
+      if (/[\\{}^_=+\-*/()frac|sum|int|sqrt|alpha|beta|gamma|delta|theta|pi|sigma|omega|implies|cdot|times|div]/.test(mathContent)) {
+        return `$$${mathContent.trim()}$$`;
+      }
+      return match; // Return original if it doesn't look like math
+    });
+    
+    // Convert parentheses notation to LaTeX delimiters for inline math
+    // Handle inline math: (math expression) -> $math expression$
+    // But be careful not to convert regular parentheses in text
+    processed = processed.replace(/\(\s*([^()]+?)\s*\)/g, (match, mathContent) => {
+      // More specific check for math expressions in parentheses
+      // Look for math operators, LaTeX commands, fractions, etc.
+      if (/[\\{}^_=]|frac|sum|int|sqrt|alpha|beta|gamma|delta|theta|pi|sigma|omega|implies|cdot|times|div|\d+[a-z]\s*=|\w+\s*=\s*\\frac/.test(mathContent)) {
+        return `$${mathContent.trim()}$`;
+      }
+      return match; // Return original if it doesn't look like math
+    });
+    
+    return processed;
+  };
+
   return (
     <div className={cn("flex items-start gap-3 w-full", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
@@ -53,7 +85,14 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           // AI responses: markdown rendering with professional formatting
           <div className="text-sm max-w-none">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
+              remarkPlugins={[
+                remarkGfm, 
+                [remarkMath, {
+                  singleDollarTextMath: false,
+                  inlineMathDouble: true,
+                  blockMathDouble: true
+                }]
+              ]}
               rehypePlugins={[rehypeSanitize, rehypeKatex]}
               components={{
                 // H3 headings with proper spacing and typography
@@ -174,7 +213,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
                 ),
               }}
             >
-              {message.content}
+              {preprocessMathContent(message.content)}
             </ReactMarkdown>
           </div>
         )}
