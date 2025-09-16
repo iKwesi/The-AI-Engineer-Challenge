@@ -31,11 +31,9 @@ export interface ProfessionalChatInterfaceProps {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === 'user';
   
-  // Custom math renderer using KaTeX directly
-  const renderMathContent = (content: string): React.ReactNode[] => {
-    if (isUser) {
-      return [<span key="content">{content}</span>];
-    }
+  // Preprocess content to convert various math notations to LaTeX
+  const preprocessMathContent = (content: string): string => {
+    if (isUser) return content;
     
     let processed = content;
     
@@ -57,62 +55,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       return match;
     });
     
-    // Split content by math delimiters and render each part
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let partKey = 0;
-    
-    // Find all math expressions (both $...$ and $$...$$)
-    const mathRegex = /(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g;
-    let match;
-    
-    while ((match = mathRegex.exec(processed)) !== null) {
-      // Add text before math
-      if (match.index > lastIndex) {
-        const textBefore = processed.slice(lastIndex, match.index);
-        if (textBefore) {
-          parts.push(<span key={`text-${partKey++}`}>{textBefore}</span>);
-        }
-      }
-      
-      // Render math
-      const mathExpression = match[1];
-      const isDisplayMath = mathExpression.startsWith('$$');
-      const mathContent = isDisplayMath 
-        ? mathExpression.slice(2, -2).trim()
-        : mathExpression.slice(1, -1).trim();
-      
-      try {
-        const html = katex.renderToString(mathContent, {
-          displayMode: isDisplayMath,
-          throwOnError: false,
-          strict: false
-        });
-        
-        parts.push(
-          <span 
-            key={`math-${partKey++}`}
-            dangerouslySetInnerHTML={{ __html: html }}
-            className={isDisplayMath ? "block my-2" : "inline"}
-          />
-        );
-      } catch (error) {
-        // If KaTeX fails, show the original expression
-        parts.push(<span key={`error-${partKey++}`}>{mathExpression}</span>);
-      }
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Add remaining text
-    if (lastIndex < processed.length) {
-      const remainingText = processed.slice(lastIndex);
-      if (remainingText) {
-        parts.push(<span key={`text-${partKey++}`}>{remainingText}</span>);
-      }
-    }
-    
-    return parts.length > 0 ? parts : [<span key="content">{content}</span>];
+    return processed;
   };
 
   return (
@@ -138,7 +81,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           <div className="text-sm max-w-none">
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex]}
+              rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
               components={{
                 // H3 headings with proper spacing and typography
                 h3: ({ children }) => (
@@ -258,7 +201,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
                 ),
               }}
             >
-              {message.content}
+              {preprocessMathContent(message.content)}
             </ReactMarkdown>
           </div>
         )}
