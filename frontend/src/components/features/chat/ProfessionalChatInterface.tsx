@@ -11,7 +11,10 @@ import { cn } from '@/lib/utils';
 import { type Message } from '@/hooks/useChat';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeSanitize from 'rehype-sanitize';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];
@@ -50,8 +53,8 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           // AI responses: markdown rendering with professional formatting
           <div className="text-sm max-w-none">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeSanitize]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeSanitize, rehypeKatex]}
               components={{
                 // H3 headings with proper spacing and typography
                 h3: ({ children }) => (

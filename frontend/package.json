@@ -19,13 +19,16 @@
     "@tailwindcss/forms": "^0.5.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "katex": "^0.16.22",
     "lucide-react": "^0.544.0",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
