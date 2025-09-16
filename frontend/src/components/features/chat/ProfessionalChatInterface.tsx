@@ -38,6 +38,25 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
     
     let processed = content;
     
+    // Convert division symbol (÷) to fractions in simple mathematical expressions
+    // Look for patterns like "Number ÷ Number" and convert to \frac{Number}{Number}
+    processed = processed.replace(/(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)/g, (match, numerator, denominator) => {
+      return `\\frac{${numerator}}{${denominator}}`;
+    });
+    
+    // Convert text-based division to fractions (like "Total apples ÷ Apples per pack")
+    // But be more careful about context
+    processed = processed.replace(/([A-Za-z][^÷\n]{1,30})\s*÷\s*([A-Za-z][^÷\n,]{1,30})(?=\s*[,.]|$)/g, (match, numerator, denominator) => {
+      const cleanNum = numerator.trim();
+      const cleanDen = denominator.trim();
+      
+      // Only convert if it looks like a mathematical expression
+      if (cleanNum.length > 0 && cleanDen.length > 0 && cleanNum.length < 50 && cleanDen.length < 50) {
+        return `\\frac{\\text{${cleanNum}}}{\\text{${cleanDen}}}`;
+      }
+      return match;
+    });
+    
     // Convert square bracket notation to LaTeX delimiters
     // Handle block math: [ ... ] -> $$ ... $$
     processed = processed.replace(/\[\s*([^[\]]+?)\s*\]/g, (match, mathContent) => {
@@ -85,15 +104,8 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           // AI responses: markdown rendering with professional formatting
           <div className="text-sm max-w-none">
             <ReactMarkdown
-              remarkPlugins={[
-                remarkGfm, 
-                [remarkMath, {
-                  singleDollarTextMath: false,
-                  inlineMathDouble: true,
-                  blockMathDouble: true
-                }]
-              ]}
-              rehypePlugins={[rehypeSanitize, rehypeKatex]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 // H3 headings with proper spacing and typography
                 h3: ({ children }) => (
