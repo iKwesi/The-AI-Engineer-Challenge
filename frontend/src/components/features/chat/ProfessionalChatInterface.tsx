@@ -55,6 +55,24 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       return match; // Return original if it doesn't look like math
     });
     
+    // Convert parentheses notation to LaTeX delimiters
+    // Handle expressions like ( \frac{12}{4} = 3 ) or ( 4x = 12 )
+    processed = processed.replace(/\(\s*([^()]+?)\s*\)/g, (match, mathContent) => {
+      const trimmed = mathContent.trim();
+      
+      // Check if this looks like a mathematical expression with LaTeX commands
+      // Look for LaTeX commands, math operators, variables, equations, etc.
+      if (/\\[a-zA-Z]+|[=+\-*/^_]|frac|sqrt|sum|int|alpha|beta|gamma|delta|theta|pi|sigma|omega|cdot|times|div|\d+[a-z]|\w+\s*=/.test(trimmed)) {
+        // If it contains LaTeX commands or complex expressions, use inline math
+        if (trimmed.includes('\\') || trimmed.split(/[=+\-]/).length > 2) {
+          return `$${trimmed}$`;
+        } else {
+          return `$${trimmed}$`;
+        }
+      }
+      return match; // Return original if it doesn't look like math
+    });
+    
     // Convert division symbol (÷) to LaTeX fractions only when not already in LaTeX context
     processed = processed.replace(/(?<!\$[^$]*?)(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)(?![^$]*?\$)/g, (match, numerator, denominator) => {
       return `$\\frac{${numerator}}{${denominator}}$`;
