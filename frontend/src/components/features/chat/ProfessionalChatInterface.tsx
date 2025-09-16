@@ -12,9 +12,7 @@ import { type Message } from '@/hooks/useChat';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeSanitize from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];
@@ -32,51 +30,32 @@ export interface ProfessionalChatInterfaceProps {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === 'user';
   
-  // Preprocess AI messages to convert bracket/parentheses math notation to standard LaTeX
+  // Preprocess AI messages to enhance LaTeX rendering
   const preprocessMathContent = (content: string): string => {
     if (isUser) return content;
     
     let processed = content;
     
-    // Convert division symbol (÷) to fractions in simple mathematical expressions
-    // Look for patterns like "Number ÷ Number" and convert to \frac{Number}{Number}
-    processed = processed.replace(/(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)/g, (match, numerator, denominator) => {
-      return `\\frac{${numerator}}{${denominator}}`;
+    // Only apply minimal preprocessing to avoid interfering with existing LaTeX
+    // Convert division symbol (÷) to LaTeX fractions only when not already in LaTeX context
+    processed = processed.replace(/(?<!\$[^$]*?)(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)(?![^$]*?\$)/g, (match, numerator, denominator) => {
+      return `$\\frac{${numerator}}{${denominator}}$`;
     });
     
-    // Convert text-based division to fractions (like "Total apples ÷ Apples per pack")
-    // But be more careful about context
-    processed = processed.replace(/([A-Za-z][^÷\n]{1,30})\s*÷\s*([A-Za-z][^÷\n,]{1,30})(?=\s*[,.]|$)/g, (match, numerator, denominator) => {
+    // Convert simple text-based division to fractions (only when clearly mathematical)
+    // But avoid interfering with existing LaTeX
+    processed = processed.replace(/(?<!\$[^$]*?)(\w+(?:\s+\w+){0,2})\s*÷\s*(\w+(?:\s+\w+){0,2})(?![^$]*?\$)(?=\s*[,.]|$)/g, (match, numerator, denominator) => {
       const cleanNum = numerator.trim();
       const cleanDen = denominator.trim();
       
-      // Only convert if it looks like a mathematical expression
-      if (cleanNum.length > 0 && cleanDen.length > 0 && cleanNum.length < 50 && cleanDen.length < 50) {
-        return `\\frac{\\text{${cleanNum}}}{\\text{${cleanDen}}}`;
+      // Only convert if it looks like a mathematical expression and is reasonably short
+      if (cleanNum.length > 0 && cleanDen.length > 0 && cleanNum.length < 30 && cleanDen.length < 30) {
+        // Check if it contains numbers or common mathematical terms
+        if (/\d|total|sum|count|number|amount|quantity|pack|group|set/i.test(cleanNum + cleanDen)) {
+          return `$\\frac{\\text{${cleanNum}}}{\\text{${cleanDen}}}$`;
+        }
       }
       return match;
-    });
-    
-    // Convert square bracket notation to LaTeX delimiters
-    // Handle block math: [ ... ] -> $$ ... $$
-    processed = processed.replace(/\[\s*([^[\]]+?)\s*\]/g, (match, mathContent) => {
-      // Check if this looks like math (contains common math symbols)
-      if (/[\\{}^_=+\-*/()frac|sum|int|sqrt|alpha|beta|gamma|delta|theta|pi|sigma|omega|implies|cdot|times|div]/.test(mathContent)) {
-        return `$$${mathContent.trim()}$$`;
-      }
-      return match; // Return original if it doesn't look like math
-    });
-    
-    // Convert parentheses notation to LaTeX delimiters for inline math
-    // Handle inline math: (math expression) -> $math expression$
-    // But be careful not to convert regular parentheses in text
-    processed = processed.replace(/\(\s*([^()]+?)\s*\)/g, (match, mathContent) => {
-      // More specific check for math expressions in parentheses
-      // Look for math operators, LaTeX commands, fractions, etc.
-      if (/[\\{}^_=]|frac|sum|int|sqrt|alpha|beta|gamma|delta|theta|pi|sigma|omega|implies|cdot|times|div|\d+[a-z]\s*=|\w+\s*=\s*\\frac/.test(mathContent)) {
-        return `$${mathContent.trim()}$`;
-      }
-      return match; // Return original if it doesn't look like math
     });
     
     return processed;
