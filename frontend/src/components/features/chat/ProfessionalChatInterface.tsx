@@ -349,7 +349,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="api-key-welcome">API Key</Label>
                   <div className="flex items-center gap-2">
-                     <KeyRound className="w-4 h-4 text-muted-foreground" />
+                     <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <Input
                       id="api-key-welcome"
                       type="password"
@@ -357,21 +357,24 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       onKeyDown={handleConfigKeyDown}
-                      className="rounded-md"
+                      className="rounded-md w-64"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                   <Label htmlFor="model-welcome">Model</Label>
-                  <Input 
-                    id="model-welcome" 
-                    type="text" 
-                    value={model} 
-                    onChange={(e) => setModel(e.target.value)}
-                    onKeyDown={handleConfigKeyDown}
-                    placeholder="Enter model name"
-                    className="rounded-md" 
-                  />
+                  <Label htmlFor="model-welcome">Model</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 flex-shrink-0"></span>
+                    <Input 
+                      id="model-welcome" 
+                      type="text" 
+                      value={model} 
+                      onChange={(e) => setModel(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
+                      placeholder="Enter model name"
+                      className="rounded-md w-64" 
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end pt-2">
                   <Button
@@ -466,7 +469,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="api-key-chat">API Key</Label>
                   <div className="flex items-center gap-2">
-                     <KeyRound className="w-4 h-4 text-muted-foreground" />
+                     <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <Input
                       id="api-key-chat"
                       type="password"
@@ -474,21 +477,24 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       onKeyDown={handleConfigKeyDown}
-                      className="rounded-md"
+                      className="rounded-md w-64"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                   <Label htmlFor="model-chat">Model</Label>
-                  <Input 
-                    id="model-chat" 
-                    type="text" 
-                    value={model} 
-                    onChange={(e) => setModel(e.target.value)}
-                    onKeyDown={handleConfigKeyDown}
-                    placeholder="Enter model name"
-                    className="rounded-md" 
-                  />
+                  <Label htmlFor="model-chat">Model</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 flex-shrink-0"></span>
+                    <Input 
+                      id="model-chat" 
+                      type="text" 
+                      value={model} 
+                      onChange={(e) => setModel(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
+                      placeholder="Enter model name"
+                      className="rounded-md w-64" 
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end pt-2">
                   <Button
