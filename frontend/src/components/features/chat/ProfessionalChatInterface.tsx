@@ -36,7 +36,25 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
     
     let processed = content;
     
-    // Only apply minimal preprocessing to avoid interfering with existing LaTeX
+    // Convert square bracket notation to LaTeX delimiters
+    // Handle expressions like [ 4x = 12 ] or [ x = \frac{12}{4} = 3 ]
+    processed = processed.replace(/\[\s*([^[\]]+?)\s*\]/g, (match, mathContent) => {
+      const trimmed = mathContent.trim();
+      
+      // Check if this looks like a mathematical expression
+      // Look for math operators, variables, LaTeX commands, equations, etc.
+      if (/[=+\-*/^_\\]|frac|sqrt|sum|int|alpha|beta|gamma|delta|theta|pi|sigma|omega|cdot|times|div|\d+[a-z]|\w+\s*=/.test(trimmed)) {
+        // If it's a simple inline expression, use single $
+        // If it contains complex LaTeX or multiple terms, use block math $$
+        if (trimmed.includes('\\') || trimmed.split(/[=+\-]/).length > 3) {
+          return `$$${trimmed}$$`;
+        } else {
+          return `$${trimmed}$`;
+        }
+      }
+      return match; // Return original if it doesn't look like math
+    });
+    
     // Convert division symbol (÷) to LaTeX fractions only when not already in LaTeX context
     processed = processed.replace(/(?<!\$[^$]*?)(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)(?![^$]*?\$)/g, (match, numerator, denominator) => {
       return `$\\frac{${numerator}}{${denominator}}$`;
