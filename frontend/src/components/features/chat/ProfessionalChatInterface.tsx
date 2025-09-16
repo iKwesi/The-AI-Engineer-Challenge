@@ -425,7 +425,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
 
   // Chat conversation layout - current layout when messages exist
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <header className="border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
           <h1 className="text-xl font-semibold">AI Chat</h1>
@@ -487,7 +487,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
         </div>
       </header>
 
-      <div ref={scrollAreaRef} className="flex-grow overflow-y-auto">
+      <div ref={scrollAreaRef} className="fixed top-20 bottom-24 left-0 right-0 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-4 space-y-6">
           {messages.map((msg, index) => (
             <MessageBubble key={index} message={msg} />
@@ -503,7 +503,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
         </div>
       </div>
 
-      <footer className="bg-card border-t p-4">
+      <footer className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit}
