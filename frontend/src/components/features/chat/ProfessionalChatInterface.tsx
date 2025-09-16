@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import katex from 'katex';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];
@@ -30,71 +31,88 @@ export interface ProfessionalChatInterfaceProps {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === 'user';
   
-  // Preprocess AI messages to enhance LaTeX rendering
-  const preprocessMathContent = (content: string): string => {
-    if (isUser) return content;
+  // Custom math renderer using KaTeX directly
+  const renderMathContent = (content: string): React.ReactNode[] => {
+    if (isUser) {
+      return [<span key="content">{content}</span>];
+    }
     
     let processed = content;
     
     // Convert square bracket notation to LaTeX delimiters
-    // Handle expressions like [ 4x = 12 ] or [ x = \frac{12}{4} = 3 ]
     processed = processed.replace(/\[\s*([^[\]]+?)\s*\]/g, (match, mathContent) => {
       const trimmed = mathContent.trim();
-      
-      // Check if this looks like a mathematical expression
-      // Look for math operators, variables, LaTeX commands, equations, etc.
       if (/[=+\-*/^_\\]|frac|sqrt|sum|int|alpha|beta|gamma|delta|theta|pi|sigma|omega|cdot|times|div|\d+[a-z]|\w+\s*=/.test(trimmed)) {
-        // If it's a simple inline expression, use single $
-        // If it contains complex LaTeX or multiple terms, use block math $$
-        if (trimmed.includes('\\') || trimmed.split(/[=+\-]/).length > 3) {
-          return `$$${trimmed}$$`;
-        } else {
-          return `$${trimmed}$`;
-        }
-      }
-      return match; // Return original if it doesn't look like math
-    });
-    
-    // Convert parentheses notation to LaTeX delimiters
-    // Handle expressions like ( \frac{12}{4} = 3 ) or ( 4x = 12 )
-    processed = processed.replace(/\(\s*([^()]+?)\s*\)/g, (match, mathContent) => {
-      const trimmed = mathContent.trim();
-      
-      // Check if this looks like a mathematical expression with LaTeX commands
-      // Look for LaTeX commands, math operators, variables, equations, etc.
-      if (/\\[a-zA-Z]+|[=+\-*/^_]|frac|sqrt|sum|int|alpha|beta|gamma|delta|theta|pi|sigma|omega|cdot|times|div|\d+[a-z]|\w+\s*=/.test(trimmed)) {
-        // If it contains LaTeX commands or complex expressions, use inline math
-        if (trimmed.includes('\\') || trimmed.split(/[=+\-]/).length > 2) {
-          return `$${trimmed}$`;
-        } else {
-          return `$${trimmed}$`;
-        }
-      }
-      return match; // Return original if it doesn't look like math
-    });
-    
-    // Convert division symbol (÷) to LaTeX fractions only when not already in LaTeX context
-    processed = processed.replace(/(?<!\$[^$]*?)(\d+(?:\.\d+)?)\s*÷\s*(\d+(?:\.\d+)?)(?![^$]*?\$)/g, (match, numerator, denominator) => {
-      return `$\\frac{${numerator}}{${denominator}}$`;
-    });
-    
-    // Convert simple text-based division to fractions (only when clearly mathematical)
-    // But avoid interfering with existing LaTeX
-    processed = processed.replace(/(?<!\$[^$]*?)(\w+(?:\s+\w+){0,2})\s*÷\s*(\w+(?:\s+\w+){0,2})(?![^$]*?\$)(?=\s*[,.]|$)/g, (match, numerator, denominator) => {
-      const cleanNum = numerator.trim();
-      const cleanDen = denominator.trim();
-      
-      // Only convert if it looks like a mathematical expression and is reasonably short
-      if (cleanNum.length > 0 && cleanDen.length > 0 && cleanNum.length < 30 && cleanDen.length < 30) {
-        // Check if it contains numbers or common mathematical terms
-        if (/\d|total|sum|count|number|amount|quantity|pack|group|set/i.test(cleanNum + cleanDen)) {
-          return `$\\frac{\\text{${cleanNum}}}{\\text{${cleanDen}}}$`;
-        }
+        return `$$${trimmed}$$`;
       }
       return match;
     });
     
-    return processed;
+    // Convert parentheses notation to LaTeX delimiters
+    processed = processed.replace(/\(\s*([^()]+?)\s*\)/g, (match, mathContent) => {
+      const trimmed = mathContent.trim();
+      if (/\\[a-zA-Z]+|[=+\-*/^_]|frac|sqrt|sum|int|alpha|beta|gamma|delta|theta|pi|sigma|omega|cdot|times|div|\d+[a-z]|\w+\s*=/.test(trimmed)) {
+        return `$${trimmed}$`;
+      }
+      return match;
+    });
+    
+    // Split content by math delimiters and render each part
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let partKey = 0;
+    
+    // Find all math expressions (both $...$ and $$...$$)
+    const mathRegex = /(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g;
+    let match;
+    
+    while ((match = mathRegex.exec(processed)) !== null) {
+      // Add text before math
+      if (match.index > lastIndex) {
+        const textBefore = processed.slice(lastIndex, match.index);
+        if (textBefore) {
+          parts.push(<span key={`text-${partKey++}`}>{textBefore}</span>);
+        }
+      }
+      
+      // Render math
+      const mathExpression = match[1];
+      const isDisplayMath = mathExpression.startsWith('$$');
+      const mathContent = isDisplayMath 
+        ? mathExpression.slice(2, -2).trim()
+        : mathExpression.slice(1, -1).trim();
+      
+      try {
+        const html = katex.renderToString(mathContent, {
+          displayMode: isDisplayMath,
+          throwOnError: false,
+          strict: false
+        });
+        
+        parts.push(
+          <span 
+            key={`math-${partKey++}`}
+            dangerouslySetInnerHTML={{ __html: html }}
+            className={isDisplayMath ? "block my-2" : "inline"}
+          />
+        );
+      } catch (error) {
+        // If KaTeX fails, show the original expression
+        parts.push(<span key={`error-${partKey++}`}>{mathExpression}</span>);
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < processed.length) {
+      const remainingText = processed.slice(lastIndex);
+      if (remainingText) {
+        parts.push(<span key={`text-${partKey++}`}>{remainingText}</span>);
+      }
+    }
+    
+    return parts.length > 0 ? parts : [<span key="content">{content}</span>];
   };
 
   return (
@@ -240,7 +258,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
                 ),
               }}
             >
-              {preprocessMathContent(message.content)}
+              {message.content}
             </ReactMarkdown>
           </div>
         )}
