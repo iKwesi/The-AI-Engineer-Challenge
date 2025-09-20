@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ProfessionalChatInterface from '../ProfessionalChatInterface';
@@ -51,7 +51,6 @@ describe('ProfessionalChatInterface Integration Tests', () => {
     });
 
     it('integrates with real useChat hook for error handling', async () => {
-      const user = userEvent.setup();
       const hookData = { 
         ...defaultHookReturn, 
         error: 'Network error occurred',
@@ -81,7 +80,6 @@ describe('ProfessionalChatInterface Integration Tests', () => {
 
   describe('Form Validation Integration', () => {
     it('validates form before calling service', async () => {
-      const user = userEvent.setup();
       const hookData = { ...defaultHookReturn };
       
       render(<ProfessionalChatInterface {...hookData} />);
@@ -147,7 +145,6 @@ describe('ProfessionalChatInterface Integration Tests', () => {
 
   describe('State Management Integration', () => {
     it('maintains form state during submission', async () => {
-      const user = userEvent.setup();
       const hookData = { 
         ...defaultHookReturn, 
         loading: true,

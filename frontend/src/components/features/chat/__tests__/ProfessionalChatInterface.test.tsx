@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ProfessionalChatInterface from '../ProfessionalChatInterface';
@@ -121,7 +121,6 @@ describe('ProfessionalChatInterface', () => {
     });
 
     it('validates required user message', async () => {
-      const user = userEvent.setup();
       render(<ProfessionalChatInterface {...defaultProps} apiKey="sk-1234567890123456789012345678901234567890" />);
       
       // Button should be disabled when message is empty

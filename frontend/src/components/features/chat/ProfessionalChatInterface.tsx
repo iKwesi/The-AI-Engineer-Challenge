@@ -13,7 +13,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import katex from 'katex';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];
@@ -371,7 +370,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
         <div className="flex-grow flex flex-col items-center justify-center p-4">
           <div className="max-w-2xl w-full text-center space-y-8">
             <h2 className="text-3xl font-semibold text-foreground">
-              What's on the agenda today?
+              What&apos;s on the agenda today?
             </h2>
             
             {/* Show loading state */}
