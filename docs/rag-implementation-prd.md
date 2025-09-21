@@ -126,16 +126,16 @@ api/
   - [x] `GET /api/rag-stats` - Service statistics endpoint
 
 ### Phase 5: YouTube Integration
-- [ ] **YouTube URL Detection**
-  - [ ] Implement regex pattern for YouTube URL detection
-  - [ ] Support both youtube.com and youtu.be formats
-  - [ ] Handle URL parameters and timestamps
+- [x] **YouTube URL Detection**
+  - [x] Implement regex pattern for YouTube URL detection
+  - [x] Support both youtube.com and youtu.be formats
+  - [x] Handle URL parameters and timestamps
   
-- [ ] **Transcript Processing**
-  - [ ] Integrate `youtube-transcript-api`
-  - [ ] Handle videos without transcripts gracefully
-  - [ ] Support multiple languages
-  - [ ] Extract and store video metadata
+- [x] **Transcript Processing**
+  - [x] Integrate `youtube-transcript-api`
+  - [x] Handle videos without transcripts gracefully
+  - [x] Support multiple languages
+  - [x] Extract and store video metadata
 
 ### Phase 6: Frontend Integration
 - [ ] **File Upload Component**
