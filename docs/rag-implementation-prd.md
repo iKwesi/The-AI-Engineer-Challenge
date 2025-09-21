@@ -83,20 +83,20 @@ api/
   - [x] Handle paragraphs, tables, and formatting
   - [x] Extract metadata (author, creation date, etc.)
   
-- [ ] **aimakerspace/document_utils/excel_utils.py**
-  - [ ] Create `ExcelLoader` for .xlsx/.xls/.csv files
-  - [ ] Handle multiple sheets
-  - [ ] Convert data to readable text format
+- [x] **aimakerspace/document_utils/excel_utils.py**
+  - [x] Create `ExcelLoader` for .xlsx/.xls/.csv files
+  - [x] Handle multiple sheets
+  - [x] Convert data to readable text format
   
-- [ ] **aimakerspace/document_utils/youtube_utils.py**
-  - [ ] Create `YouTubeLoader` for video transcripts
-  - [ ] Extract video metadata (title, duration, channel)
-  - [ ] Handle transcript formatting and timestamps
+- [x] **aimakerspace/document_utils/youtube_utils.py**
+  - [x] Create `YouTubeLoader` for video transcripts
+  - [x] Extract video metadata (title, duration, channel)
+  - [x] Handle transcript formatting and timestamps
   
-- [ ] **aimakerspace/document_utils/factory.py**
-  - [ ] Create `DocumentUtilsFactory` for auto-selection
-  - [ ] Support file extension and URL pattern matching
-  - [ ] Provide clear error messages for unsupported formats
+- [x] **aimakerspace/document_utils/factory.py**
+  - [x] Create `DocumentLoaderFactory` for auto-selection
+  - [x] Support file extension and URL pattern matching
+  - [x] Provide clear error messages for unsupported formats
 
 ### Phase 3: Text Processing Utilities
 - [ ] **aimakerspace/processing_utils/text_splitter.py**
