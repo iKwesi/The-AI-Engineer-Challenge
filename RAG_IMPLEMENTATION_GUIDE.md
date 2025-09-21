@@ -9,7 +9,7 @@ This guide documents the complete RAG (Retrieval-Augmented Generation) implement
 ### Prerequisites
 
 1. **Python 3.13+** with `uv` package manager
-2. **OpenAI API Key** - Set as environment variable: `export OPENAI_API_KEY=your_key_here`
+2. **OpenAI API Key** - Provided by frontend 
 3. **Node.js 18+** for the frontend
 
 ### Installation
@@ -31,7 +31,7 @@ cd ..
 ### Testing the Implementation
 
 ```bash
-# Test the RAG implementation (requires OpenAI API key)
+# Test the document loaders (no API key required)
 python test_rag_implementation.py
 
 # Start the API server
@@ -41,6 +41,8 @@ python app.py
 # Start the frontend (in another terminal)
 cd frontend
 npm run dev
+
+# Note: Full RAG testing requires an API key provided through the frontend
 ```
 
 ## 🏗️ Architecture
@@ -356,13 +358,19 @@ The test suite covers:
 
 ## 🚀 Deployment
 
-### Environment Variables
+### API Key Handling
+
+**Important**: The OpenAI API key is provided by the frontend, not through environment variables. The application follows the same pattern as the original chat implementation:
+
+- Frontend collects API key from user
+- Frontend sends API key with each request
+- Backend receives API key in request payload
+- No environment variables required for API keys
+
+### Optional Environment Variables
 
 ```bash
-# Required
-export OPENAI_API_KEY=your_openai_api_key
-
-# Optional
+# Optional configuration (API key comes from frontend)
 export MAX_FILE_SIZE_MB=50
 export CHUNK_SIZE=1000
 export CHUNK_OVERLAP=200
@@ -404,14 +412,9 @@ CMD ["python", "api/app.py"]
    ```
 
 2. **API Key Issues**
-   ```bash
-   # Verify API key is set
-   echo $OPENAI_API_KEY
-   
-   # Test API key validity
-   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-        https://api.openai.com/v1/models
-   ```
+   - API keys are provided by the frontend, not environment variables
+   - Ensure the frontend is sending the API key with requests
+   - Test API key validity through the frontend interface
 
 3. **File Upload Issues**
    - Check file size limits (50MB default)
