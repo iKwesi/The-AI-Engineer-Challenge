@@ -81,6 +81,44 @@ class DocumentLoader(ABC):
                     f"File {file_path.name} ({file_size} bytes) exceeds maximum "
                     f"size limit of {max_size} bytes ({self.processing_limits.max_file_size_mb}MB)"
                 )
+
+    def validate_batch_size(self, file_paths: List[Path], max_total_size: Optional[int] = None) -> None:
+        """
+        Validate that a batch of files doesn't exceed cumulative size limits.
+        
+        Args:
+            file_paths: List of file paths to validate
+            max_total_size: Optional override for max total size (defaults to processing_limits)
+            
+        Raises:
+            FileTooLargeError: If the total batch size is too large
+        """
+        if not file_paths:
+            return
+        
+        total_size = 0
+        file_sizes = {}
+        
+        for file_path in file_paths:
+            if file_path.exists():
+                file_size = file_path.stat().st_size
+                file_sizes[file_path.name] = file_size
+                total_size += file_size
+        
+        # Use provided max or default to processing limits
+        max_size = max_total_size or self.processing_limits.get_max_file_size_bytes()
+        
+        if total_size > max_size:
+            max_mb = max_size / (1024 * 1024)
+            total_mb = total_size / (1024 * 1024)
+            
+            file_list = ", ".join([f"{name} ({size/1024/1024:.1f}MB)" 
+                                 for name, size in file_sizes.items()])
+            
+            raise FileTooLargeError(
+                f"Batch of {len(file_paths)} files ({total_mb:.1f}MB total) exceeds maximum "
+                f"batch size limit of {max_mb:.1f}MB. Files: {file_list}"
+            )
     
     def validate_file_extension(self, file_path: Path) -> None:
         """

@@ -60,6 +60,7 @@ class Chunk:
     Represents a text chunk with its metadata and optional embedding.
     
     Used for storing processed text chunks in the vector database.
+    Enhanced with page-aware metadata for precise source attribution.
     """
     content: str
     chunk_index: int
@@ -69,6 +70,13 @@ class Chunk:
     start_char: Optional[int] = None
     end_char: Optional[int] = None
     
+    # Enhanced page-aware fields
+    chunk_id: Optional[str] = None
+    page_start: Optional[int] = None
+    page_end: Optional[int] = None
+    section_title: Optional[str] = None
+    section_level: Optional[int] = None
+    
     def get_word_count(self) -> int:
         """Return the word count of the chunk content."""
         return len(self.content.split())
@@ -76,6 +84,31 @@ class Chunk:
     def get_char_count(self) -> int:
         """Return the character count of the chunk content."""
         return len(self.content)
+    
+    def get_page_range(self) -> str:
+        """Return human-readable page range."""
+        if self.page_start is None:
+            return "Unknown"
+        if self.page_end is None or self.page_start == self.page_end:
+            return str(self.page_start)
+        return f"{self.page_start}-{self.page_end}"
+    
+    def get_citation_text(self, include_section: bool = True) -> str:
+        """Generate citation text for RAG responses."""
+        filename = self.metadata.get("filename", "document")
+        page_range = self.get_page_range()
+        
+        if include_section and self.section_title:
+            return f"section {self.section_title} of {filename} (page {page_range})"
+        else:
+            return f"{filename} (page {page_range})"
+    
+    def get_source_url(self) -> Optional[str]:
+        """Get direct URL to source with page anchor."""
+        base_url = self.metadata.get("source_url")
+        if base_url and self.page_start:
+            return f"{base_url}#page={self.page_start}"
+        return base_url
 
 
 @dataclass
@@ -176,16 +209,113 @@ class SearchResult:
 
 
 @dataclass
+class PageData:
+    """
+    Represents a single page from a document with position tracking.
+    
+    Used for page-aware chunking and character position mapping.
+    """
+    page_number: int
+    text: str
+    start_char_global: int
+    end_char_global: int
+    word_count: int = field(init=False)
+    char_count: int = field(init=False)
+    
+    def __post_init__(self):
+        """Calculate derived fields."""
+        self.word_count = len(self.text.split())
+        self.char_count = len(self.text)
+    
+    def get_char_range(self) -> tuple[int, int]:
+        """Return the global character range for this page."""
+        return (self.start_char_global, self.end_char_global)
+
+
+@dataclass
+class SectionData:
+    """
+    Represents a document section with hierarchical information.
+    
+    Used for semantic chunking and rich source attribution.
+    """
+    title: str
+    level: int  # 1=chapter, 2=section, 3=subsection, etc.
+    page_start: int
+    page_end: Optional[int] = None
+    start_char_global: int = 0
+    end_char_global: Optional[int] = None
+    section_number: Optional[str] = None  # e.g., "4.1", "3.2.1"
+    parent_section: Optional[str] = None
+    
+    def get_page_range(self) -> str:
+        """Return human-readable page range for this section."""
+        if self.page_end is None or self.page_start == self.page_end:
+            return str(self.page_start)
+        return f"{self.page_start}-{self.page_end}"
+    
+    def get_full_title(self) -> str:
+        """Return full section title with number if available."""
+        if self.section_number:
+            return f"{self.section_number} {self.title}"
+        return self.title
+
+
+@dataclass
+class DocumentStructure:
+    """
+    Represents the hierarchical structure of a document.
+    
+    Contains pages and sections for enhanced processing.
+    """
+    pages: List[PageData]
+    sections: List[SectionData] = field(default_factory=list)
+    total_pages: int = field(init=False)
+    total_chars: int = field(init=False)
+    
+    def __post_init__(self):
+        """Calculate derived fields."""
+        self.total_pages = len(self.pages)
+        self.total_chars = sum(page.char_count for page in self.pages)
+    
+    def get_page_by_number(self, page_number: int) -> Optional[PageData]:
+        """Get page data by page number."""
+        for page in self.pages:
+            if page.page_number == page_number:
+                return page
+        return None
+    
+    def get_section_for_page(self, page_number: int) -> Optional[SectionData]:
+        """Get the section that contains the given page."""
+        for section in self.sections:
+            if section.page_start <= page_number <= (section.page_end or section.page_start):
+                return section
+        return None
+    
+    def get_char_to_page_mapping(self) -> Dict[int, int]:
+        """Create a mapping from character position to page number."""
+        char_to_page = {}
+        for page in self.pages:
+            for char_pos in range(page.start_char_global, page.end_char_global + 1):
+                char_to_page[char_pos] = page.page_number
+        return char_to_page
+
+
+@dataclass
 class ChunkingConfig:
     """
     Configuration for text chunking operations.
     
     Defines how documents should be split into chunks.
+    Enhanced with page-aware chunking options.
     """
     chunk_size: int = 1000
     overlap: int = 200
     preserve_sentences: bool = True
     min_chunk_size: int = 100
+    page_aware: bool = True  # Enable page-aware chunking
+    respect_section_boundaries: bool = True  # Don't split across sections
+    include_page_context: bool = True  # Include page metadata in chunks
     
     def __post_init__(self):
         """Validate chunking configuration."""
@@ -243,6 +373,16 @@ class UnsupportedFileTypeError(DocumentProcessingError):
 
 class YouTubeProcessingError(DocumentProcessingError):
     """Raised when YouTube video processing fails."""
+    pass
+
+
+class PasswordProtectedFileError(DocumentProcessingError):
+    """Raised when a file is password-protected and no password is provided."""
+    pass
+
+
+class InvalidPasswordError(DocumentProcessingError):
+    """Raised when the provided password is incorrect."""
     pass
 
 
