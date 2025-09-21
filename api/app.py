@@ -38,6 +38,24 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers in requests
 )
 
+# Custom exception handler for HTTPException
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    from fastapi.responses import JSONResponse
+    
+    # If detail is a dict, return it directly
+    if isinstance(exc.detail, dict):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail
+        )
+    
+    # Otherwise, wrap string detail in error format
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"status": "error", "message": str(exc.detail)}
+    )
+
 # Define the default system prompt for the AI assistant
 DEFAULT_SYSTEM_PROMPT = """You are a helpful, expert AI assistant.  
 Your mission is to always provide gold-standard responses that are:
@@ -156,6 +174,10 @@ class YouTubeProcessResponse(BaseModel):
     video_title: str
     chunks_processed: int
 
+class ErrorResponse(BaseModel):
+    status: str
+    message: str
+
 # Global variables for RAG system
 rag_service: Optional[RAGService] = None
 
@@ -232,7 +254,7 @@ async def rag_chat(request: RAGChatRequest):
             return {"response": response.choices[0].message.content, "used_context": False}
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Document upload endpoint
 @app.post("/api/upload-document", response_model=DocumentUploadResponse)
@@ -275,7 +297,11 @@ async def upload_document(
             os.unlink(tmp_file_path)
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return 400 for validation/processing errors, 500 for unexpected errors
+        if "Unsupported file type" in str(e) or "Invalid" in str(e):
+            raise HTTPException(status_code=400, detail={"status": "error", "message": str(e)})
+        else:
+            raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # YouTube processing endpoint
 @app.post("/api/process-youtube", response_model=YouTubeProcessResponse)
@@ -290,7 +316,8 @@ async def process_youtube(request: YouTubeRequest):
         )
         
         # Extract video title from metadata
-        video_title = processed_doc.original_document.metadata.get('title', 'Unknown Video')
+        video_title = processed_doc.original_document.metadata.get('video_title', 
+                     processed_doc.original_document.metadata.get('title', 'Unknown Video'))
         
         return YouTubeProcessResponse(
             status="success",
@@ -300,7 +327,11 @@ async def process_youtube(request: YouTubeRequest):
         )
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return 400 for validation/processing errors, 500 for unexpected errors
+        if "Invalid YouTube URL" in str(e) or "Invalid" in str(e):
+            raise HTTPException(status_code=400, detail={"status": "error", "message": str(e)})
+        else:
+            raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # List processed documents
 @app.get("/api/documents")
@@ -311,7 +342,7 @@ async def list_documents(api_key: str):
         return {"documents": documents}
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Remove document from vector database
 @app.delete("/api/documents/{document_id}")
@@ -323,10 +354,13 @@ async def remove_document(document_id: str, api_key: str):
         if success:
             return {"status": "success", "message": f"Document '{document_id}' removed successfully"}
         else:
-            raise HTTPException(status_code=404, detail=f"Document '{document_id}' not found")
+            raise HTTPException(status_code=404, detail={"status": "error", "message": f"Document '{document_id}' not found"})
     
+    except HTTPException:
+        # Re-raise HTTPException as-is (don't catch and convert to 500)
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Get RAG service statistics
 @app.get("/api/rag-stats")
@@ -337,12 +371,13 @@ async def get_rag_stats(api_key: str):
         return {"stats": stats}
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Define a health check endpoint to verify API status
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok"}
+    from datetime import datetime
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 # Entry point for running the application directly
 if __name__ == "__main__":

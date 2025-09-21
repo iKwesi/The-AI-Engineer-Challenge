@@ -19,7 +19,7 @@ import io
 
 # Import the FastAPI app
 from api.app import app
-from aimakerspace.models import ProcessedDocument
+from aimakerspace.models import ProcessedDocument, Document, DocumentType, Chunk, ProcessingStatus
 
 
 class TestAPIEndpoints:
@@ -44,14 +44,26 @@ class TestAPIEndpoints:
         """Test successful document upload."""
         # Mock RAG service
         mock_rag = Mock()
+        # Create a mock document first
+        mock_document = Document(
+            content="Test document content",
+            metadata={},
+            source_path=Path("test.txt"),
+            document_type=DocumentType.TEXT,
+            document_id="test-doc"
+        )
+        
+        # Create mock chunks
+        mock_chunks = [
+            Chunk(content=f"Chunk {i}", chunk_index=i, source_document_id="test-doc")
+            for i in range(5)
+        ]
+        
         mock_processed_doc = ProcessedDocument(
-            document_id="test-doc",
-            filename="test.txt",
-            document_type="text",
-            chunks_processed=5,
-            word_count=100,
+            original_document=mock_document,
+            chunks=mock_chunks,
             processing_metadata={},
-            status="completed"
+            status=ProcessingStatus.COMPLETED
         )
         mock_rag.process_document = AsyncMock(return_value=mock_processed_doc)
         mock_get_rag_service.return_value = mock_rag
@@ -111,14 +123,26 @@ class TestAPIEndpoints:
         """Test successful YouTube video processing."""
         # Mock RAG service
         mock_rag = Mock()
+        # Create a mock YouTube document
+        mock_document = Document(
+            content="YouTube video transcript content",
+            metadata={"video_title": "Test Video", "channel": "Test Channel"},
+            source_path=None,
+            document_type=DocumentType.YOUTUBE,
+            document_id="youtube-test"
+        )
+        
+        # Create mock chunks
+        mock_chunks = [
+            Chunk(content=f"Transcript chunk {i}", chunk_index=i, source_document_id="youtube-test")
+            for i in range(8)
+        ]
+        
         mock_processed_doc = ProcessedDocument(
-            document_id="youtube-test",
-            filename="Test Video",
-            document_type="youtube",
-            chunks_processed=8,
-            word_count=500,
+            original_document=mock_document,
+            chunks=mock_chunks,
             processing_metadata={"video_title": "Test Video", "channel": "Test Channel"},
-            status="completed"
+            status=ProcessingStatus.COMPLETED
         )
         mock_rag.process_document = AsyncMock(return_value=mock_processed_doc)
         mock_get_rag_service.return_value = mock_rag
@@ -164,6 +188,7 @@ class TestAPIEndpoints:
         # Mock RAG service
         mock_rag = Mock()
         mock_rag.chat_with_context = AsyncMock(return_value="AI response with context from documents")
+        mock_rag.processed_documents = {"doc1": Mock()}  # Mock non-empty processed documents
         mock_get_rag_service.return_value = mock_rag
         
         response = self.client.post(
@@ -182,12 +207,21 @@ class TestAPIEndpoints:
         assert data["used_context"] is True
     
     @patch('api.app.get_rag_service')
-    def test_rag_chat_without_context(self, mock_get_rag_service):
+    @patch('api.app.OpenAI')
+    def test_rag_chat_without_context(self, mock_openai, mock_get_rag_service):
         """Test RAG chat without document context."""
         # Mock RAG service
         mock_rag = Mock()
-        mock_rag.chat_with_context = AsyncMock(return_value="AI response without context")
+        mock_rag.processed_documents = {}  # Empty processed documents
         mock_get_rag_service.return_value = mock_rag
+        
+        # Mock OpenAI client
+        mock_client = Mock()
+        mock_response = Mock()
+        mock_response.choices = [Mock()]
+        mock_response.choices[0].message.content = "AI response without context"
+        mock_client.chat.completions.create.return_value = mock_response
+        mock_openai.return_value = mock_client
         
         response = self.client.post(
             "/api/rag-chat",
@@ -245,7 +279,7 @@ class TestAPIEndpoints:
         """Test removing a document."""
         # Mock RAG service
         mock_rag = Mock()
-        mock_rag.remove_document = AsyncMock(return_value=True)
+        mock_rag.remove_document = Mock(return_value=True)
         mock_get_rag_service.return_value = mock_rag
         
         response = self.client.delete(f"/api/documents/test-doc?api_key={self.test_api_key}")
@@ -260,7 +294,7 @@ class TestAPIEndpoints:
         """Test removing a document that doesn't exist."""
         # Mock RAG service
         mock_rag = Mock()
-        mock_rag.remove_document = AsyncMock(return_value=False)
+        mock_rag.remove_document = Mock(return_value=False)
         mock_get_rag_service.return_value = mock_rag
         
         response = self.client.delete(f"/api/documents/nonexistent?api_key={self.test_api_key}")
@@ -356,14 +390,26 @@ class TestRAGServiceIntegration:
         """Test end-to-end document processing workflow."""
         # Mock RAG service for upload
         mock_rag = Mock()
+        # Create a mock document for end-to-end test
+        mock_document = Document(
+            content="This is test content for end-to-end testing.",
+            metadata={},
+            source_path=Path("test.txt"),
+            document_type=DocumentType.TEXT,
+            document_id="e2e-test"
+        )
+        
+        # Create mock chunks
+        mock_chunks = [
+            Chunk(content=f"E2E chunk {i}", chunk_index=i, source_document_id="e2e-test")
+            for i in range(3)
+        ]
+        
         mock_processed_doc = ProcessedDocument(
-            document_id="e2e-test",
-            filename="test.txt",
-            document_type="text",
-            chunks_processed=3,
-            word_count=50,
+            original_document=mock_document,
+            chunks=mock_chunks,
             processing_metadata={},
-            status="completed"
+            status=ProcessingStatus.COMPLETED
         )
         mock_rag.process_document = AsyncMock(return_value=mock_processed_doc)
         
@@ -382,9 +428,10 @@ class TestRAGServiceIntegration:
         
         # Mock for chat
         mock_rag.chat_with_context = AsyncMock(return_value="Response based on uploaded document")
+        mock_rag.processed_documents = {"e2e-test": mock_processed_doc}  # Mock processed documents for chat
         
         # Mock for removal
-        mock_rag.remove_document = AsyncMock(return_value=True)
+        mock_rag.remove_document = Mock(return_value=True)
         
         mock_get_rag_service.return_value = mock_rag
         
