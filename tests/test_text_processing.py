@@ -28,7 +28,8 @@ class TestCharacterTextSplitter:
         self.splitter = CharacterTextSplitter(
             chunk_size=100,
             chunk_overlap=20,
-            separator="\n"
+            preserve_sentences=True,
+            min_chunk_size=10  # Lower minimum to allow small test chunks
         )
     
     def test_split_simple_text(self):
@@ -69,7 +70,7 @@ class TestCharacterTextSplitter:
     def test_split_empty_text(self):
         """Test splitting empty text."""
         chunks = self.splitter.split_text("")
-        assert chunks == [""]
+        assert chunks == []
     
     def test_split_short_text(self):
         """Test splitting text shorter than chunk size."""
@@ -98,21 +99,20 @@ class TestCharacterTextSplitter:
                 assert sentences[-1].strip() == "" or "." in sentences[-1]
     
     def test_custom_separator(self):
-        """Test splitting with custom separator."""
+        """Test splitting with custom configuration."""
         splitter = CharacterTextSplitter(
             chunk_size=30,
             chunk_overlap=5,
-            separator="|"
+            preserve_sentences=False
         )
         
-        text = "Part1|Part2|Part3|Part4|Part5"
+        text = "Part1 Part2 Part3 Part4 Part5"
         chunks = splitter.split_text(text)
         
         assert len(chunks) > 0
-        # Check that separator is respected
+        # Check that chunks respect size limits
         for chunk in chunks:
-            if "|" in chunk:
-                assert chunk.count("|") >= 0
+            assert len(chunk) <= 30
 
 
 class TestPageAwareChunker:
@@ -120,10 +120,11 @@ class TestPageAwareChunker:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.chunker = PageAwareChunker(
+        config = ChunkingConfig(
             chunk_size=200,
             overlap=50
         )
+        self.chunker = PageAwareChunker(config=config)
     
     def test_chunk_single_page_document(self):
         """Test chunking a single-page document."""
@@ -135,11 +136,25 @@ class TestPageAwareChunker:
             document_id="test-1"
         )
         
-        chunks = self.chunker.chunk_document(doc)
+        # Create a mock document structure for page-aware chunking
+        from aimakerspace.models import DocumentStructure, PageData
+        
+        # Create page data
+        page_data = PageData(
+            page_number=1,
+            text=doc.content,
+            start_char_global=0,
+            end_char_global=len(doc.content)
+        )
+        
+        # Create document structure
+        doc_structure = DocumentStructure(pages=[page_data])
+        
+        chunks = self.chunker.chunk_document_structure(doc, doc_structure)
         
         assert len(chunks) > 0
         assert all(len(chunk.content) <= 200 for chunk in chunks)
-        assert all(chunk.metadata.get("source_document_id") == "test-1" for chunk in chunks)
+        assert all(chunk.source_document_id == "test-1" for chunk in chunks)
     
     def test_chunk_multipage_document(self):
         """Test chunking a multi-page document."""
@@ -154,7 +169,32 @@ class TestPageAwareChunker:
             document_id="test-2"
         )
         
-        chunks = self.chunker.chunk_document(doc)
+        # Create mock document structure for page-aware chunking
+        from aimakerspace.models import DocumentStructure, PageData
+        
+        # Split content into pages
+        page1_content = "\n--- Page 1 ---\nPage 1 content. " * 10
+        page2_content = "\n--- Page 2 ---\nPage 2 content. " * 10
+        
+        # Create page data
+        page_data_1 = PageData(
+            page_number=1,
+            text=page1_content,
+            start_char_global=0,
+            end_char_global=len(page1_content)
+        )
+        
+        page_data_2 = PageData(
+            page_number=2,
+            text=page2_content,
+            start_char_global=len(page1_content),
+            end_char_global=len(page1_content) + len(page2_content)
+        )
+        
+        # Create document structure
+        doc_structure = DocumentStructure(pages=[page_data_1, page_data_2])
+        
+        chunks = self.chunker.chunk_document_structure(doc, doc_structure)
         
         assert len(chunks) > 0
         # Check that page information is preserved
@@ -176,7 +216,32 @@ class TestPageAwareChunker:
             document_id="test-3"
         )
         
-        chunks = self.chunker.chunk_document(doc)
+        # Create mock document structure for page-aware chunking
+        from aimakerspace.models import DocumentStructure, PageData
+        
+        # Split content into pages
+        page1_content = "Page 1 short content."
+        page2_content = "Page 2 also short."
+        
+        # Create page data
+        page_data_1 = PageData(
+            page_number=1,
+            text=page1_content,
+            start_char_global=0,
+            end_char_global=len(page1_content)
+        )
+        
+        page_data_2 = PageData(
+            page_number=2,
+            text=page2_content,
+            start_char_global=len(page1_content),
+            end_char_global=len(page1_content) + len(page2_content)
+        )
+        
+        # Create document structure
+        doc_structure = DocumentStructure(pages=[page_data_1, page_data_2])
+        
+        chunks = self.chunker.chunk_document_structure(doc, doc_structure)
         
         # With short content, each page should be in separate chunks
         page_1_only = [c for c in chunks if "Page 1" in c.content and "Page 2" not in c.content]
@@ -195,13 +260,26 @@ class TestPageAwareChunker:
             document_id="test-4"
         )
         
-        chunks = self.chunker.chunk_document(doc)
+        # Create mock document structure for page-aware chunking
+        from aimakerspace.models import DocumentStructure, PageData
+        
+        # Create page data
+        page_data = PageData(
+            page_number=1,
+            text=doc.content,
+            start_char_global=0,
+            end_char_global=len(doc.content)
+        )
+        
+        # Create document structure
+        doc_structure = DocumentStructure(pages=[page_data])
+        
+        chunks = self.chunker.chunk_document_structure(doc, doc_structure)
         
         for chunk in chunks:
-            assert chunk.metadata["source_document_id"] == "test-4"
-            assert chunk.metadata["source_document_type"] == "pdf"
-            assert "chunk_index" in chunk.metadata
-            assert "chunk_size" in chunk.metadata
+            assert chunk.source_document_id == "test-4"
+            assert chunk.metadata["filename"] == "unknown"  # Default filename
+            assert "processing_timestamp" in chunk.metadata
 
 
 class TestRAGService:
@@ -246,18 +324,18 @@ class TestRAGService:
             mock_loader.load_documents.return_value = [mock_doc]
             mock_factory.return_value.load_documents.return_value = [mock_doc]
             
-            # Mock embedding
-            self.mock_embedding_model.get_embeddings.return_value = [[0.1, 0.2, 0.3]]
-            
-            result = await self.rag_service.process_document(
-                source="test.txt",
-                document_id="custom-id"
-            )
-            
-            assert isinstance(result, ProcessedDocument)
-            assert result.document_id == "custom-id"
-            assert result.status == "completed"
-            assert result.chunks_processed > 0
+        # Mock embedding
+        self.mock_embedding_model.get_embeddings.return_value = [[0.1, 0.2, 0.3]]
+        
+        result = await self.rag_service.process_document(
+            source="test.txt",
+            document_id="custom-id"
+        )
+        
+        assert isinstance(result, ProcessedDocument)
+        assert result.original_document.document_id == "custom-id"
+        assert result.status.value == "completed"
+        assert len(result.chunks) > 0
     
     @pytest.mark.asyncio
     async def test_process_youtube_url(self):
@@ -282,8 +360,8 @@ class TestRAGService:
             )
             
             assert isinstance(result, ProcessedDocument)
-            assert result.document_id == "youtube-test"
-            assert result.document_type == "youtube"
+            assert result.original_document.document_id == "youtube-test"
+            assert result.original_document.document_type == DocumentType.YOUTUBE
     
     @pytest.mark.asyncio
     async def test_search_documents(self):
@@ -298,14 +376,17 @@ class TestRAGService:
         # Mock embedding for query
         self.mock_embedding_model.get_embeddings.return_value = [[0.5, 0.6, 0.7]]
         
-        results = await self.rag_service.search_documents(
+        # Mock embedding for query
+        self.mock_embedding_model.get_embedding.return_value = [0.5, 0.6, 0.7]
+        
+        results = await self.rag_service.search(
             query="test query",
-            max_results=5
+            k=5
         )
         
-        assert len(results) == 2
-        assert results[0]["content"] == "Relevant content 1"
-        assert results[1]["content"] == "Relevant content 2"
+        assert len(results.chunks) == 2
+        assert results.chunks[0].content == "Relevant content 1"
+        assert results.chunks[1].content == "Relevant content 2"
     
     @pytest.mark.asyncio
     async def test_chat_with_context(self):
@@ -316,9 +397,25 @@ class TestRAGService:
             {"content": "Context 2", "metadata": {"document_id": "doc2"}}
         ]
         
-        with patch.object(self.rag_service, 'search_documents', return_value=mock_search_results):
+        with patch.object(self.rag_service, 'search') as mock_search:
+            from aimakerspace.models import SearchResult, SearchQuery, Chunk
+            
+            # Create mock chunks
+            mock_chunks = [
+                Chunk(content="Context 1", chunk_index=0, source_document_id="doc1"),
+                Chunk(content="Context 2", chunk_index=1, source_document_id="doc2")
+            ]
+            
+            # Create mock search result
+            mock_search_result = SearchResult(
+                chunks=mock_chunks,
+                scores=[0.9, 0.8],
+                query=SearchQuery(query_text="What is the main topic?")
+            )
+            mock_search.return_value = mock_search_result
+            
             # Mock chat response
-            self.mock_chat_model.invoke.return_value = Mock(content="AI response with context")
+            self.mock_chat_model.agenerate_response.return_value = "AI response with context"
             
             response = await self.rag_service.chat_with_context(
                 user_message="What is the main topic?",
@@ -326,15 +423,25 @@ class TestRAGService:
             )
             
             assert response == "AI response with context"
-            self.mock_chat_model.invoke.assert_called_once()
+            self.mock_chat_model.agenerate_response.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_chat_without_context(self):
         """Test chat without document context."""
         # Mock empty search results
-        with patch.object(self.rag_service, 'search_documents', return_value=[]):
+        with patch.object(self.rag_service, 'search') as mock_search:
+            from aimakerspace.models import SearchResult, SearchQuery
+            
+            # Create empty search result
+            empty_search_result = SearchResult(
+                chunks=[],
+                scores=[],
+                query=SearchQuery(query_text="Hello")
+            )
+            mock_search.return_value = empty_search_result
+            
             # Mock chat response
-            self.mock_chat_model.invoke.return_value = Mock(content="AI response without context")
+            self.mock_chat_model.agenerate_response.return_value = "AI response without context"
             
             response = await self.rag_service.chat_with_context(
                 user_message="Hello",
@@ -345,17 +452,14 @@ class TestRAGService:
     
     def test_get_stats(self):
         """Test getting RAG service statistics."""
-        # Mock vector database stats
-        self.mock_vector_db.get_stats.return_value = {
-            "total_vectors": 100,
-            "total_documents": 10
-        }
+        # Mock vector database to have vectors attribute
+        self.mock_vector_db.vectors = [1, 2, 3]  # Mock some vectors
         
         stats = self.rag_service.get_stats()
         
         assert isinstance(stats, dict)
-        assert "total_vectors" in stats
-        assert "total_documents" in stats
+        assert "active_documents" in stats
+        assert "vector_db_size" in stats
     
     @pytest.mark.asyncio
     async def test_remove_document(self):
@@ -431,8 +535,8 @@ class TestRAGService:
         """Test that processing limits are enforced."""
         limits = ProcessingLimits(
             max_file_size_mb=1,  # Very small limit
-            max_files_per_batch=1,
-            timeout_seconds=30
+            max_chunks_per_document=10,
+            max_documents_per_session=5
         )
         
         with patch('aimakerspace.processing_utils.rag_service.VectorDatabase') as mock_vdb, \
@@ -450,7 +554,7 @@ class TestRAGService:
             )
             
             assert rag_service.processing_limits.max_file_size_mb == 1
-            assert rag_service.processing_limits.max_files_per_batch == 1
+            assert rag_service.processing_limits.max_chunks_per_document == 10
 
 
 # Integration tests for text processing
@@ -492,7 +596,8 @@ class TestTextProcessingIntegration:
     
     def test_page_aware_chunker_with_pdf_content(self):
         """Test page-aware chunker with PDF-like content."""
-        chunker = PageAwareChunker(chunk_size=300, overlap=75)
+        config = ChunkingConfig(chunk_size=300, overlap=75)
+        chunker = PageAwareChunker(config=config)
         
         # Simulate PDF content with page markers
         content = """
@@ -523,7 +628,29 @@ class TestTextProcessingIntegration:
             document_id="quantum-doc"
         )
         
-        chunks = chunker.chunk_document(doc)
+        # Create mock document structure for page-aware chunking
+        from aimakerspace.models import DocumentStructure, PageData
+        
+        # Split content into pages (simplified)
+        pages_content = content.strip().split("=== Page")
+        page_data_list = []
+        char_offset = 0
+        
+        for i, page_content in enumerate(pages_content[1:], 1):  # Skip first empty split
+            page_text = f"=== Page{page_content}"
+            page_data = PageData(
+                page_number=i,
+                text=page_text,
+                start_char_global=char_offset,
+                end_char_global=char_offset + len(page_text)
+            )
+            page_data_list.append(page_data)
+            char_offset += len(page_text)
+        
+        # Create document structure
+        doc_structure = DocumentStructure(pages=page_data_list)
+        
+        chunks = chunker.chunk_document_structure(doc, doc_structure)
         
         assert len(chunks) > 0
         
@@ -538,8 +665,8 @@ class TestTextProcessingIntegration:
         
         # Check metadata
         for chunk in chunks:
-            assert chunk.metadata["source_document_id"] == "quantum-doc"
-            assert "chunk_index" in chunk.metadata
+            assert chunk.source_document_id == "quantum-doc"
+            assert "processing_timestamp" in chunk.metadata
 
 
 if __name__ == "__main__":
