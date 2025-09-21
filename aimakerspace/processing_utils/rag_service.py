@@ -208,8 +208,8 @@ class RAGService:
             # Extract text content
             texts = [chunk.content for chunk in chunks]
             
-            # Generate embeddings
-            embeddings = await self.embedding_model.get_embeddings(texts)
+            # Generate embeddings (synchronous call)
+            embeddings = self.embedding_model.get_embeddings(texts)
             
             # Assign embeddings to chunks
             for chunk, embedding in zip(chunks, embeddings):
@@ -265,8 +265,8 @@ class RAGService:
             SearchResult with relevant chunks and scores
         """
         try:
-            # Generate query embedding
-            query_embedding = await self.embedding_model.get_embedding(query)
+            # Generate query embedding (synchronous call)
+            query_embedding = self.embedding_model.get_embedding(query)
             
             # Search vector database
             results = self.vector_db.search(
@@ -388,8 +388,8 @@ class RAGService:
             else:
                 system_prompt = system_prompt.replace("{context}", context)
             
-            # Generate response
-            response = await self.chat_model.agenerate_response(
+            # Generate response (synchronous call)
+            response = self.chat_model.agenerate_response(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -399,8 +399,8 @@ class RAGService:
             return response
             
         except Exception as e:
-            # Fallback to response without context
-            return await self.chat_model.agenerate_response(
+            # Fallback to response without context (synchronous call)
+            return self.chat_model.agenerate_response(
                 messages=[{"role": "user", "content": user_message}]
             )
     
