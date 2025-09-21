@@ -125,6 +125,29 @@ api/
   - [x] `DELETE /api/documents/{id}` - Remove documents from vector DB
   - [x] `GET /api/rag-stats` - Service statistics endpoint
 
+### Phase 4.5: Conversation Mode Management (NEW ENHANCEMENT)
+- [ ] **Document Mode Management**
+  - [ ] Session-based document state management using session storage
+  - [ ] Multi-document conflict resolution with relevance scoring
+  - [ ] Intelligent fallback detection with context-aware thresholds
+  - [ ] Document lifecycle management (add/remove/cleanup)
+  - [ ] Session validation and recovery mechanisms
+  - [ ] Vector DB cleanup on session expiration
+  
+- [ ] **Enhanced RAG Service**
+  - [ ] Implement ConversationModeManager class
+  - [ ] Add confidence scoring and threshold management
+  - [ ] Multi-document query resolution with source attribution
+  - [ ] Fallback detection and user confirmation workflow
+  - [ ] Session persistence and recovery logic
+  
+- [ ] **New API Endpoints for Mode Management**
+  - [ ] `POST /api/conversation-mode/enter` - Enter document mode
+  - [ ] `POST /api/conversation-mode/exit` - Exit document mode
+  - [ ] `POST /api/conversation-mode/query-with-fallback` - Query with fallback handling
+  - [ ] `GET /api/conversation-mode/status` - Get current mode and documents
+  - [ ] `POST /api/conversation-mode/resolve-conflict` - Handle multi-document conflicts
+
 ### Phase 5: YouTube Integration
 - [x] **YouTube URL Detection**
   - [x] Implement regex pattern for YouTube URL detection
@@ -153,23 +176,78 @@ api/
   - [ ] Show document sources in responses
   - [ ] Allow users to toggle RAG on/off
 
+### Phase 6.5: Conversation Mode UI (NEW ENHANCEMENT)
+- [ ] **Document Mode Indicator Components**
+  - [ ] Document mode status indicator with multi-document support
+  - [ ] Active documents panel with management controls
+  - [ ] Exit document mode button and /exit command support
+  - [ ] Session recovery notifications and validation
+  
+- [ ] **Fallback and Conflict Resolution UI**
+  - [ ] Fallback confirmation dialog with explanation
+  - [ ] Multi-document conflict resolution interface
+  - [ ] Confidence score visualization for transparency
+  - [ ] Source attribution display in responses
+  
+- [ ] **Enhanced Chat Interface**
+  - [ ] Citation display with clickable document references
+  - [ ] Mode-aware response styling (document vs general)
+  - [ ] Document management panel (add/remove/view)
+  - [ ] Session storage management and cleanup controls
+  
+- [ ] **Session Storage Integration**
+  - [ ] Implement session-based document state persistence
+  - [ ] Handle session storage capacity limits gracefully
+  - [ ] Auto-cleanup on session expiration or corruption
+  - [ ] Optimize storage with vector DB references only
+
 ### Phase 7: Testing & Quality Assurance
 - [ ] **Unit Tests**
   - [ ] Test all document loaders with sample files
   - [ ] Test text splitter with various content types
   - [ ] Test RAG service integration
   - [ ] Test API endpoints with proper mocking
+  - [ ] Test ConversationModeManager class functionality
+  - [ ] Test session storage management utilities
   
 - [ ] **Integration Tests**
   - [ ] Test end-to-end document processing pipeline
   - [ ] Test YouTube transcript processing
   - [ ] Test RAG chat with real documents
+  - [ ] Test conversation mode transitions and persistence
+  - [ ] Test multi-document conflict resolution workflow
   
 - [ ] **Error Handling Tests**
   - [ ] Test file size limits
   - [ ] Test unsupported file formats
   - [ ] Test network failures for YouTube processing
   - [ ] Test malformed documents
+  
+- [ ] **Edge Case Testing (NEW)**
+  - [ ] **Multi-Document Conflict Scenarios**
+    - [ ] Test conflicting information across documents
+    - [ ] Test document relevance scoring accuracy
+    - [ ] Test user preference handling in conflicts
+  - [ ] **Session Storage Edge Cases**
+    - [ ] Test session storage corruption recovery
+    - [ ] Test storage capacity limit handling
+    - [ ] Test browser refresh during active document mode
+    - [ ] Test session expiration and cleanup
+  - [ ] **Document Lifecycle Edge Cases**
+    - [ ] Test document removal cascading effects
+    - [ ] Test auto-exit document mode when last document removed
+    - [ ] Test partial document removal in multi-doc scenarios
+    - [ ] Test vector DB cleanup on document removal
+  - [ ] **Confidence Threshold Boundary Testing**
+    - [ ] Test borderline confidence scores
+    - [ ] Test confidence score smoothing algorithms
+    - [ ] Test context-aware threshold adjustments
+    - [ ] Test fallback explanation generation
+  - [ ] **Network and Performance Edge Cases**
+    - [ ] Test network interruption during document processing
+    - [ ] Test concurrent document uploads
+    - [ ] Test session recovery after network failures
+    - [ ] Test performance with maximum document limits
 
 ### Phase 8: Documentation & Deployment
 - [ ] **Update API README**
@@ -209,6 +287,46 @@ api/
 - **YouTube processing**: 5 videos per minute per user
 - **Chat requests**: 60 requests per minute per user
 
+### Conversation Mode Management Specifications (NEW)
+- **Session Storage Strategy**: Store document metadata and vector references only
+- **Storage Limits**: Aligned with 50MB file size limit, optimized for session storage capacity
+- **Document Mode Persistence**: Session-based with automatic cleanup on browser close
+- **Confidence Threshold**: 0.7 default with context-aware adjustments
+- **Multi-Document Support**: Up to 10 documents per session with conflict resolution
+- **Fallback Behavior**: User confirmation required for general knowledge responses in document mode
+- **Session Recovery**: Automatic validation and graceful degradation on session restore
+- **Vector DB Cleanup**: Automatic cleanup on session expiration (24 hours max)
+
+### Session Storage Schema
+```typescript
+interface DocumentModeSession {
+  mode: 'general' | 'document';
+  sessionId: string;
+  createdAt: number;
+  expiresAt: number;
+  documents: {
+    [docId: string]: {
+      name: string;
+      size: number;
+      uploadTime: number;
+      chunkCount: number;
+      vectorIds: string[];
+      confidenceHistory: number[];
+    }
+  };
+  conversationContext: {
+    lastDocumentQuery: string;
+    lastConfidenceScore: number;
+    fallbackHistory: string[];
+    conflictResolutions: Array<{
+      query: string;
+      selectedDocument: string;
+      timestamp: number;
+    }>;
+  };
+}
+```
+
 ## Success Criteria
 
 ### Assignment Requirements (Must Have)
@@ -224,6 +342,16 @@ api/
 - [ ] Multiple document management
 - [ ] Document source attribution in responses
 - [ ] Advanced chunking strategies
+
+### Conversation Mode Management Features (NEW)
+- [ ] ✅ Document mode automatic activation on upload
+- [ ] ✅ Clear mode indicators and status display
+- [ ] ✅ Intelligent fallback with user confirmation
+- [ ] ✅ Multi-document conflict resolution
+- [ ] ✅ Session-based persistence with automatic cleanup
+- [ ] ✅ Citation display with source attribution
+- [ ] ✅ Confidence score transparency
+- [ ] ✅ Exit document mode functionality (/exit command)
 
 ### Code Quality Standards
 - [ ] Single Responsibility Principle followed

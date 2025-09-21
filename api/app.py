@@ -178,6 +178,39 @@ class ErrorResponse(BaseModel):
     status: str
     message: str
 
+# Conversation Mode Management Models
+class ConversationModeRequest(BaseModel):
+    api_key: str
+
+class FallbackConfirmationRequest(BaseModel):
+    query: str
+    use_general_knowledge: bool
+    api_key: str
+
+class ConflictResolutionRequest(BaseModel):
+    query: str
+    selected_document_id: str
+    confidence_scores: Dict[str, float]
+    api_key: str
+
+class ConversationModeResponse(BaseModel):
+    status: str
+    mode: str
+    session_id: Optional[str]
+    documents: List[Dict[str, Any]]
+    message: str
+
+class FallbackResponse(BaseModel):
+    needs_fallback: bool
+    fallback_request: Optional[Dict[str, Any]]
+    response: Optional[str]
+    citations: Optional[List[Dict[str, Any]]]
+    confidence_score: float
+
+class ConflictDetectionResponse(BaseModel):
+    has_conflict: bool
+    conflict_info: Optional[Dict[str, Any]]
+
 # Global variables for RAG system
 rag_service: Optional[RAGService] = None
 
@@ -369,6 +402,231 @@ async def get_rag_stats(api_key: str):
         rag = get_rag_service(api_key)
         stats = rag.get_stats()
         return {"stats": stats}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Conversation Mode Management Endpoints
+
+# Enter document mode (automatically triggered when documents are uploaded)
+@app.post("/api/conversation/enter-document-mode", response_model=ConversationModeResponse)
+async def enter_document_mode(request: ConversationModeRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        
+        # Get all processed documents
+        if not rag.processed_documents:
+            raise HTTPException(
+                status_code=400, 
+                detail={"status": "error", "message": "No documents available. Please upload documents first."}
+            )
+        
+        # Convert processed documents to Document objects for conversation manager
+        documents = [doc.original_document for doc in rag.processed_documents.values()]
+        
+        # Enter document mode
+        session = rag.enter_document_mode(documents)
+        
+        # Update document chunks in session
+        for doc_id in rag.processed_documents.keys():
+            rag.update_document_chunks_in_session(doc_id)
+        
+        return ConversationModeResponse(
+            status="success",
+            mode=session.mode.value,
+            session_id=session.session_id,
+            documents=session.documents,
+            message="Entered document mode. Your queries will now be answered using your uploaded documents."
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Exit document mode
+@app.post("/api/conversation/exit-document-mode", response_model=ConversationModeResponse)
+async def exit_document_mode(request: ConversationModeRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        session = rag.exit_document_mode()
+        
+        return ConversationModeResponse(
+            status="success",
+            mode=session.mode.value,
+            session_id=session.session_id,
+            documents=[],
+            message="Exited document mode. Your queries will now use general knowledge."
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Get conversation status
+@app.get("/api/conversation/status")
+async def get_conversation_status(api_key: str):
+    try:
+        rag = get_rag_service(api_key)
+        status = rag.get_conversation_status()
+        return {"status": "success", "conversation_status": status}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Enhanced RAG chat with fallback detection
+@app.post("/api/conversation/chat", response_model=FallbackResponse)
+async def conversation_chat(request: RAGChatRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        
+        # Check if we're in document mode
+        conversation_status = rag.get_conversation_status()
+        
+        if conversation_status['mode'] == 'document' and conversation_status['session_active']:
+            # Use conversation mode with fallback detection
+            result = await rag.query_with_fallback(
+                query=request.user_message,
+                max_context_chunks=5
+            )
+            
+            return FallbackResponse(
+                needs_fallback=result['needs_fallback'],
+                fallback_request=result.get('fallback_request'),
+                response=result.get('response'),
+                citations=result.get('citations'),
+                confidence_score=result.get('confidence_score', 0.0)
+            )
+        else:
+            # Regular chat mode
+            client = OpenAI(api_key=request.api_key)
+            response = client.chat.completions.create(
+                model=request.model,
+                messages=[
+                    {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
+                    {"role": "user", "content": request.user_message}
+                ]
+            )
+            
+            return FallbackResponse(
+                needs_fallback=False,
+                fallback_request=None,
+                response=response.choices[0].message.content,
+                citations=None,
+                confidence_score=1.0
+            )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Handle fallback confirmation
+@app.post("/api/conversation/fallback-confirm")
+async def confirm_fallback(request: FallbackConfirmationRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        
+        if request.use_general_knowledge:
+            # User confirmed to use general knowledge
+            client = OpenAI(api_key=request.api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
+                    {"role": "user", "content": request.query}
+                ]
+            )
+            
+            return {
+                "status": "success",
+                "response": f"Note: this answer is not grounded in your uploaded document.\n\n{response.choices[0].message.content}",
+                "used_general_knowledge": True
+            }
+        else:
+            # User declined, stay in document mode
+            return {
+                "status": "success",
+                "message": "Staying in document mode. Please try rephrasing your question or ask about content in your documents.",
+                "used_general_knowledge": False
+            }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Detect multi-document conflicts
+@app.post("/api/conversation/detect-conflicts", response_model=ConflictDetectionResponse)
+async def detect_conflicts(request: RAGChatRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        
+        # Check if we're in document mode with multiple documents
+        conversation_status = rag.get_conversation_status()
+        
+        if (conversation_status['mode'] != 'document' or 
+            not conversation_status['session_active'] or 
+            len(conversation_status['documents']) < 2):
+            
+            return ConflictDetectionResponse(
+                has_conflict=False,
+                conflict_info=None
+            )
+        
+        # Detect conflicts
+        conflict_info = await rag.detect_multi_document_conflicts(
+            query=request.user_message,
+            max_context_chunks=5
+        )
+        
+        return ConflictDetectionResponse(
+            has_conflict=conflict_info is not None,
+            conflict_info=conflict_info
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Resolve multi-document conflicts
+@app.post("/api/conversation/resolve-conflict")
+async def resolve_conflict(request: ConflictResolutionRequest):
+    try:
+        rag = get_rag_service(request.api_key)
+        
+        # Record the user's resolution
+        resolution = rag.resolve_conflict(
+            query=request.query,
+            selected_document_id=request.selected_document_id,
+            confidence_scores=request.confidence_scores
+        )
+        
+        # Now answer the query using the selected document
+        search_result = await rag.search(
+            query=request.query,
+            k=5,
+            filters={'source_document_id': request.selected_document_id}
+        )
+        
+        # Generate response with context from selected document
+        response = await rag.chat_with_context(
+            user_message=request.query,
+            max_context_chunks=5
+        )
+        
+        # Build citations from selected document
+        citations = []
+        for chunk in search_result.chunks:
+            doc_info = rag.get_document_info(chunk.source_document_id)
+            citations.append({
+                'chunk_id': chunk.chunk_id,
+                'document_name': doc_info['filename'] if doc_info else 'Unknown',
+                'document_id': chunk.source_document_id,
+                'content_preview': chunk.content[:200] + '...' if len(chunk.content) > 200 else chunk.content
+            })
+        
+        return {
+            "status": "success",
+            "resolution": resolution,
+            "response": response,
+            "citations": citations,
+            "message": f"Answered using {resolution['selected_document_name']}"
+        }
     
     except Exception as e:
         raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})

@@ -24,6 +24,13 @@ from ..models import (
 from ..document_utils.factory import DocumentLoaderFactory
 from ..processing_utils.text_splitter import CharacterTextSplitter
 from ..processing_utils.page_aware_chunker import PageAwareChunker
+from ..processing_utils.conversation_mode_manager import (
+    ConversationModeManager, 
+    ConversationMode, 
+    FallbackRequest, 
+    ConflictDetection,
+    DocumentModeSession
+)
 from ..vectordatabase import VectorDatabase
 from ..openai_utils.embedding import EmbeddingModel
 from ..openai_utils.chatmodel import ChatOpenAI
@@ -74,6 +81,9 @@ class RAGService:
         
         # Initialize vector database
         self.vector_db = VectorDatabase()
+        
+        # Initialize conversation mode manager
+        self.conversation_manager = ConversationModeManager()
         
         # Track processed documents
         self.processed_documents: Dict[str, ProcessedDocument] = {}
@@ -534,6 +544,250 @@ Instructions:
             'queries_processed': 0,
             'last_activity': datetime.now().isoformat()
         }
+    
+    # Conversation Mode Management Methods
+    
+    def enter_document_mode(self, documents: List[Document]) -> DocumentModeSession:
+        """
+        Enter document mode with the provided documents.
+        
+        Args:
+            documents: List of documents to activate
+            
+        Returns:
+            Updated session
+        """
+        return self.conversation_manager.enter_document_mode(documents)
+    
+    def exit_document_mode(self) -> DocumentModeSession:
+        """
+        Exit document mode and return to general mode.
+        
+        Returns:
+            Updated session
+        """
+        return self.conversation_manager.exit_document_mode()
+    
+    async def query_with_fallback(
+        self,
+        query: str,
+        max_context_chunks: int = 5,
+        context_aware_threshold: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Query with intelligent fallback detection.
+        
+        Args:
+            query: User's query
+            max_context_chunks: Maximum number of context chunks
+            context_aware_threshold: Optional custom threshold
+            
+        Returns:
+            Dictionary with response, fallback info, and citations
+        """
+        # Perform search
+        search_result = await self.search(query, k=max_context_chunks)
+        
+        # Check for fallback need
+        needs_fallback, fallback_request = self.conversation_manager.query_with_fallback(
+            query, search_result, context_aware_threshold
+        )
+        
+        if needs_fallback and fallback_request:
+            return {
+                'needs_fallback': True,
+                'fallback_request': {
+                    'query': fallback_request.query,
+                    'confidence_score': fallback_request.confidence_score,
+                    'explanation': fallback_request.explanation,
+                    'timestamp': fallback_request.timestamp
+                },
+                'retrieved_chunks': [
+                    {
+                        'content': chunk.content,
+                        'source_document_id': chunk.source_document_id,
+                        'chunk_id': chunk.chunk_id,
+                        'metadata': chunk.metadata
+                    }
+                    for chunk in fallback_request.retrieved_chunks
+                ]
+            }
+        
+        # Generate response with context
+        response = await self.chat_with_context(
+            query, 
+            max_context_chunks=max_context_chunks
+        )
+        
+        # Build citations
+        citations = []
+        for chunk in search_result.chunks:
+            doc_info = self.get_document_info(chunk.source_document_id)
+            citations.append({
+                'chunk_id': chunk.chunk_id,
+                'document_name': doc_info['filename'] if doc_info else 'Unknown',
+                'document_id': chunk.source_document_id,
+                'content_preview': chunk.content[:200] + '...' if len(chunk.content) > 200 else chunk.content
+            })
+        
+        return {
+            'needs_fallback': False,
+            'response': response,
+            'citations': citations,
+            'confidence_score': self.conversation_manager.current_session.conversation_context.get('last_confidence_score', 0.0) if self.conversation_manager.current_session else 0.0
+        }
+    
+    async def detect_multi_document_conflicts(
+        self,
+        query: str,
+        max_context_chunks: int = 5
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Detect conflicts between multiple documents for a query.
+        
+        Args:
+            query: User's query
+            max_context_chunks: Maximum chunks per document
+            
+        Returns:
+            Conflict information if detected, None otherwise
+        """
+        if not self.conversation_manager.current_session:
+            return None
+        
+        # Get search results for each document
+        search_results_by_document = {}
+        
+        for doc_id in self.conversation_manager.current_session.documents.keys():
+            # Search with document filter
+            search_result = await self.search(
+                query, 
+                k=max_context_chunks,
+                filters={'source_document_id': doc_id}
+            )
+            if search_result.chunks:
+                search_results_by_document[doc_id] = search_result
+        
+        # Detect conflicts
+        conflict = self.conversation_manager.detect_multi_document_conflicts(
+            query, search_results_by_document
+        )
+        
+        if conflict:
+            return {
+                'query': conflict.query,
+                'explanation': conflict.explanation,
+                'conflicting_documents': [
+                    {
+                        'document_id': doc_id,
+                        'document_name': self._get_document_name(doc_id),
+                        'confidence_score': conflict.confidence_scores.get(doc_id, 0.0),
+                        'relevant_chunks': [
+                            {
+                                'content': chunk.content[:200] + '...' if len(chunk.content) > 200 else chunk.content,
+                                'chunk_id': chunk.chunk_id
+                            }
+                            for chunk in chunks[:2]  # Show top 2 chunks
+                        ]
+                    }
+                    for doc_id, chunks in conflict.conflicting_documents.items()
+                ]
+            }
+        
+        return None
+    
+    def resolve_conflict(
+        self,
+        query: str,
+        selected_document_id: str,
+        confidence_scores: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Record user's resolution of a multi-document conflict.
+        
+        Args:
+            query: The query that caused the conflict
+            selected_document_id: Document ID the user selected
+            confidence_scores: Confidence scores for all documents
+            
+        Returns:
+            Resolution record
+        """
+        resolution = self.conversation_manager.resolve_conflict(
+            query, selected_document_id, confidence_scores
+        )
+        
+        return {
+            'query': resolution.query,
+            'selected_document': resolution.selected_document,
+            'selected_document_name': self._get_document_name(resolution.selected_document),
+            'timestamp': resolution.timestamp,
+            'confidence_scores': resolution.confidence_scores
+        }
+    
+    def get_conversation_status(self) -> Dict[str, Any]:
+        """
+        Get current conversation mode status.
+        
+        Returns:
+            Status information
+        """
+        return self.conversation_manager.get_session_status()
+    
+    def load_session(self, session_data: Dict[str, Any]) -> bool:
+        """
+        Load a conversation session from stored data.
+        
+        Args:
+            session_data: Session data dictionary
+            
+        Returns:
+            True if loaded successfully
+        """
+        return self.conversation_manager.load_session(session_data)
+    
+    def get_session_data(self) -> Optional[Dict[str, Any]]:
+        """
+        Get current session data for storage.
+        
+        Returns:
+            Session data dictionary or None
+        """
+        if self.conversation_manager.current_session:
+            return self.conversation_manager.current_session.to_dict()
+        return None
+    
+    def _get_document_name(self, document_id: str) -> str:
+        """
+        Get display name for a document.
+        
+        Args:
+            document_id: Document ID
+            
+        Returns:
+            Document display name
+        """
+        doc_info = self.get_document_info(document_id)
+        if doc_info:
+            return doc_info['filename']
+        return f"Document {document_id[:8]}..."
+    
+    def update_document_chunks_in_session(self, document_id: str) -> None:
+        """
+        Update document chunk information in the conversation session.
+        
+        Args:
+            document_id: Document ID to update
+        """
+        if document_id in self.processed_documents:
+            processed_doc = self.processed_documents[document_id]
+            vector_ids = [chunk.chunk_id for chunk in processed_doc.chunks]
+            
+            self.conversation_manager.update_document_chunks(
+                document_id, 
+                len(processed_doc.chunks), 
+                vector_ids
+            )
 
 
 # Convenience functions for quick RAG operations
