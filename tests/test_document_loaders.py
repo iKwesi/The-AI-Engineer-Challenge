@@ -237,7 +237,7 @@ class TestWordDocumentLoader:
         assert not self.loader.can_load(Path("document.txt"))
         assert not self.loader.can_load(Path("document.pdf"))
     
-    @patch('aimakerspace.document_utils.word_utils.Document')
+    @patch('aimakerspace.document_utils.word_utils.DocxDocument')
     def test_load_simple_docx(self, mock_document):
         """Test loading a simple DOCX file."""
         # Mock document with paragraphs
@@ -265,12 +265,12 @@ class TestWordDocumentLoader:
                 assert "Second paragraph" in doc.content
                 assert doc.document_type == DocumentType.WORD
                 assert "paragraph_count" in doc.metadata
-                assert "title" in doc.metadata
+                assert "doc_title" in doc.metadata
                 
             finally:
                 os.unlink(f.name)
     
-    @patch('aimakerspace.document_utils.word_utils.Document')
+    @patch('aimakerspace.document_utils.word_utils.DocxDocument')
     def test_load_docx_with_tables(self, mock_document):
         """Test loading a DOCX file with tables."""
         # Mock document with table
@@ -323,8 +323,9 @@ class TestExcelLoader:
         assert not self.loader.can_load(Path("document.txt"))
         assert not self.loader.can_load(Path("document.pdf"))
     
+    @patch('aimakerspace.document_utils.excel_utils.load_workbook')
     @patch('aimakerspace.document_utils.excel_utils.pd.read_excel')
-    def test_load_simple_xlsx(self, mock_read_excel):
+    def test_load_simple_xlsx(self, mock_read_excel, mock_load_workbook):
         """Test loading a simple Excel file."""
         # Mock pandas DataFrame
         import pandas as pd
@@ -334,6 +335,14 @@ class TestExcelLoader:
             'City': ['New York', 'Boston']
         })
         mock_read_excel.return_value = mock_df
+        
+        # Mock openpyxl workbook
+        mock_workbook = Mock()
+        mock_workbook.sheetnames = ['Sheet1']
+        mock_workbook.properties.title = "Test Workbook"
+        mock_workbook.properties.creator = "Test User"
+        mock_workbook.properties.created = None
+        mock_load_workbook.return_value = mock_workbook
         
         with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
             try:
@@ -347,7 +356,7 @@ class TestExcelLoader:
                 assert "New York" in doc.content
                 assert doc.document_type == DocumentType.EXCEL
                 assert "sheet_count" in doc.metadata
-                assert "row_count" in doc.metadata
+                assert "total_rows" in doc.metadata
                 
             finally:
                 os.unlink(f.name)
@@ -411,43 +420,39 @@ class TestYouTubeLoader:
         with pytest.raises(YouTubeProcessingError):
             self.loader._extract_video_id("https://vimeo.com/123456")
     
-    @patch('aimakerspace.document_utils.youtube_utils.YouTubeTranscriptApi')
-    @patch('aimakerspace.document_utils.youtube_utils.pytube.YouTube')
-    def test_load_youtube_video(self, mock_youtube, mock_transcript_api):
+    def test_load_youtube_video(self):
         """Test loading a YouTube video with transcript."""
-        # Mock transcript
-        mock_transcript_list = Mock()
-        mock_transcript = Mock()
-        mock_transcript.fetch.return_value = [
-            {'text': 'Hello world', 'start': 0.0, 'duration': 2.0},
-            {'text': 'This is a test', 'start': 2.0, 'duration': 3.0}
-        ]
-        mock_transcript_list.find_manually_created_transcript.return_value = mock_transcript
-        mock_transcript_api.list_transcripts.return_value = mock_transcript_list
-        
-        # Mock YouTube metadata
-        mock_yt = Mock()
-        mock_yt.title = "Test Video"
-        mock_yt.author = "Test Channel"
-        mock_yt.length = 300
-        mock_yt.views = 1000
-        mock_yt.publish_date = None
-        mock_yt.description = "Test description"
-        mock_yt.keywords = ["test", "video"]
-        mock_youtube.return_value = mock_yt
-        
-        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        documents = self.loader.load_documents(url)
-        
-        assert len(documents) == 1
-        doc = documents[0]
-        assert isinstance(doc, Document)
-        assert "Test Video" in doc.content
-        assert "Hello world" in doc.content
-        assert "This is a test" in doc.content
-        assert doc.document_type == DocumentType.YOUTUBE
-        assert doc.metadata["video_title"] == "Test Video"
-        assert doc.metadata["channel_name"] == "Test Channel"
+        # Mock the loader's methods directly
+        with patch.object(self.loader, '_get_transcript') as mock_get_transcript, \
+             patch.object(self.loader, '_get_video_metadata') as mock_get_metadata:
+            
+            # Mock transcript response
+            mock_get_transcript.return_value = ("Hello world This is a test", "en")
+            
+            # Mock video metadata response
+            mock_get_metadata.return_value = {
+                'title': 'Test Video',
+                'channel': 'Test Channel',
+                'duration': 300,
+                'view_count': 1000,
+                'upload_date': None,
+                'description': 'Test description',
+                'keywords': ['test', 'video'],
+                'rating': None,
+            }
+            
+            url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            documents = self.loader.load_documents(url)
+            
+            assert len(documents) == 1
+            doc = documents[0]
+            assert isinstance(doc, Document)
+            assert "Test Video" in doc.content
+            assert "Hello world" in doc.content
+            assert "This is a test" in doc.content
+            assert doc.document_type == DocumentType.YOUTUBE
+            assert doc.metadata["video_title"] == "Test Video"
+            assert doc.metadata["channel_name"] == "Test Channel"
     
     def test_detect_youtube_urls(self):
         """Test detecting YouTube URLs in text."""
