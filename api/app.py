@@ -1,5 +1,5 @@
 # Import required FastAPI components for building the API
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 # Import Pydantic for data validation and settings management
@@ -7,7 +7,21 @@ from pydantic import BaseModel
 # Import OpenAI client for interacting with OpenAI's API
 from openai import OpenAI
 import os
-from typing import Optional
+import sys
+import re
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+from io import BytesIO
+import tempfile
+
+# Add the parent directory to the path to import aimakerspace
+sys.path.append(str(Path(__file__).parent.parent))
+
+# Import aimakerspace utilities
+from aimakerspace.text_utils import TextFileLoader, PDFLoader, CharacterTextSplitter
+from aimakerspace.vectordatabase import VectorDatabase
+from aimakerspace.openai_utils.embedding import EmbeddingModel
+from aimakerspace.openai_utils.chatmodel import ChatOpenAI
 
 # Initialize FastAPI application with a title
 app = FastAPI(title="OpenAI Chat API")
@@ -111,12 +125,42 @@ One simple analogy in plain language.
 One or two lines wrapping up the explanation.  
 """
 
-# Define the data model for chat requests using Pydantic
+# Define the data models for requests using Pydantic
 # This ensures incoming request data is properly validated
 class ChatRequest(BaseModel):
     user_message: str      # Message from the user
     model: Optional[str] = "gpt-4.1-mini"  # Optional model selection with default
     api_key: str          # OpenAI API key for authentication
+
+class RAGChatRequest(BaseModel):
+    user_message: str      # Message from the user
+    model: Optional[str] = "gpt-4.1-mini"  # Optional model selection with default
+    api_key: str          # OpenAI API key for authentication
+    use_context: bool = True  # Whether to use RAG context
+
+class YouTubeRequest(BaseModel):
+    youtube_url: str       # YouTube URL to process
+    api_key: str          # OpenAI API key for authentication
+
+class DocumentUploadResponse(BaseModel):
+    status: str
+    message: str
+    chunks_processed: int
+    filename: str
+
+class YouTubeProcessResponse(BaseModel):
+    status: str
+    message: str
+    video_title: str
+    chunks_processed: int
+
+# Global variables for RAG system
+vector_db: Optional[VectorDatabase] = None
+embedding_model: Optional[EmbeddingModel] = None
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+# File size limit (50MB)
+MAX_FILE_SIZE = 50 * 1024 * 1024
 
 # Define the main chat endpoint that handles POST requests
 @app.post("/api/chat")
