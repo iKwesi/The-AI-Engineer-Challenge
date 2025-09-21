@@ -85,7 +85,7 @@ class TestTextFileLoader:
                 assert doc.content == test_content
                 assert doc.document_type == DocumentType.TEXT
                 assert doc.source_path == Path(f.name)
-                assert "encoding" in doc.metadata
+                assert "encoding_used" in doc.metadata
                 assert "file_size" in doc.metadata
                 assert "line_count" in doc.metadata
                 
@@ -105,7 +105,7 @@ class TestTextFileLoader:
                 assert len(documents) == 1
                 doc = documents[0]
                 assert doc.content == test_content
-                assert doc.metadata["encoding"] == "utf-8"
+                assert doc.metadata["encoding_used"] == "utf-8"
                 
             finally:
                 os.unlink(f.name)
@@ -147,7 +147,7 @@ class TestPDFLoader:
         assert not self.loader.can_load(Path("document.txt"))
         assert not self.loader.can_load(Path("document.docx"))
     
-    @patch('aimakerspace.document_utils.pdf_utils.PdfReader')
+    @patch('aimakerspace.document_utils.pdf_utils.PyPDF2.PdfReader')
     def test_load_simple_pdf(self, mock_pdf_reader):
         """Test loading a simple PDF file."""
         # Mock PDF reader
@@ -156,6 +156,7 @@ class TestPDFLoader:
         
         mock_reader = Mock()
         mock_reader.pages = [mock_page]
+        mock_reader.is_encrypted = False
         mock_reader.metadata = {
             '/Title': 'Test PDF',
             '/Author': 'Test Author',
@@ -174,12 +175,12 @@ class TestPDFLoader:
                 assert doc.document_type == DocumentType.PDF
                 assert doc.source_path == Path(f.name)
                 assert "page_count" in doc.metadata
-                assert "title" in doc.metadata
+                assert "pdf_title" in doc.metadata
                 
             finally:
                 os.unlink(f.name)
     
-    @patch('aimakerspace.document_utils.pdf_utils.PdfReader')
+    @patch('aimakerspace.document_utils.pdf_utils.PyPDF2.PdfReader')
     def test_load_multipage_pdf(self, mock_pdf_reader):
         """Test loading a multi-page PDF."""
         # Mock multiple pages
@@ -190,6 +191,7 @@ class TestPDFLoader:
         
         mock_reader = Mock()
         mock_reader.pages = [mock_page1, mock_page2]
+        mock_reader.is_encrypted = False
         mock_reader.metadata = {}
         mock_pdf_reader.return_value = mock_reader
         
@@ -206,7 +208,7 @@ class TestPDFLoader:
             finally:
                 os.unlink(f.name)
     
-    @patch('aimakerspace.document_utils.pdf_utils.PdfReader')
+    @patch('aimakerspace.document_utils.pdf_utils.PyPDF2.PdfReader')
     def test_load_corrupted_pdf(self, mock_pdf_reader):
         """Test handling of corrupted PDF files."""
         mock_pdf_reader.side_effect = Exception("Corrupted PDF")

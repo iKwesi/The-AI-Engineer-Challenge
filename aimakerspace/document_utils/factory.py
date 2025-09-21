@@ -80,10 +80,10 @@ class DocumentLoaderFactory:
         # Create loader with appropriate arguments
         if loader_type == 'youtube':
             # YouTube loader doesn't take a path argument
-            return loader_class(processing_limits=self.processing_limits, **kwargs)
+            return loader_class(**kwargs)
         else:
             # File-based loaders take a path argument
-            return loader_class(source, processing_limits=self.processing_limits, **kwargs)
+            return loader_class(source, **kwargs)
     
     def load_documents(self, source: Union[Path, str], **kwargs) -> List[Document]:
         """
@@ -132,6 +132,10 @@ class DocumentLoaderFactory:
         Raises:
             UnsupportedFileTypeError: If no suitable loader is found
         """
+        # Handle empty or None source
+        if not source or str(source).strip() == "":
+            raise UnsupportedFileTypeError("Empty source provided")
+        
         # Check if it's a YouTube URL
         if self._is_youtube_url(str(source)):
             return 'youtube'
