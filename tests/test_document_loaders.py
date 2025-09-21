@@ -60,12 +60,12 @@ class TestTextFileLoader:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.loader = TextFileLoader()
+        self.loader = TextFileLoader("test.txt")
     
     def test_can_load_text_files(self):
         """Test that loader can identify text files."""
         assert self.loader.can_load(Path("test.txt"))
-        assert self.loader.can_load(Path("document.text"))
+        assert self.loader.can_load(Path("document.TXT"))  # Case insensitive
         assert not self.loader.can_load(Path("document.pdf"))
         assert not self.loader.can_load(Path("document.docx"))
     
@@ -138,7 +138,7 @@ class TestPDFLoader:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.loader = PDFLoader()
+        self.loader = PDFLoader("test.pdf")
     
     def test_can_load_pdf_files(self):
         """Test that loader can identify PDF files."""
@@ -225,7 +225,7 @@ class TestWordDocumentLoader:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.loader = WordDocumentLoader()
+        self.loader = WordDocumentLoader("test.docx")
     
     def test_can_load_word_files(self):
         """Test that loader can identify Word files."""
@@ -310,7 +310,7 @@ class TestExcelLoader:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.loader = ExcelLoader()
+        self.loader = ExcelLoader("test.xlsx")
     
     def test_can_load_excel_files(self):
         """Test that loader can identify Excel files."""
@@ -497,33 +497,33 @@ class TestDocumentLoaderFactory:
     
     def test_get_loader_for_text_file(self):
         """Test getting the correct loader for text files."""
-        loader = self.factory.get_loader(Path("test.txt"))
+        loader = self.factory.create_loader(Path("test.txt"))
         assert isinstance(loader, TextFileLoader)
     
     def test_get_loader_for_pdf_file(self):
         """Test getting the correct loader for PDF files."""
-        loader = self.factory.get_loader(Path("test.pdf"))
+        loader = self.factory.create_loader(Path("test.pdf"))
         assert isinstance(loader, PDFLoader)
     
     def test_get_loader_for_word_file(self):
         """Test getting the correct loader for Word files."""
-        loader = self.factory.get_loader(Path("test.docx"))
+        loader = self.factory.create_loader(Path("test.docx"))
         assert isinstance(loader, WordDocumentLoader)
     
     def test_get_loader_for_excel_file(self):
         """Test getting the correct loader for Excel files."""
-        loader = self.factory.get_loader(Path("test.xlsx"))
+        loader = self.factory.create_loader(Path("test.xlsx"))
         assert isinstance(loader, ExcelLoader)
     
     def test_get_loader_for_youtube_url(self):
         """Test getting the correct loader for YouTube URLs."""
-        loader = self.factory.get_loader("https://www.youtube.com/watch?v=abc123")
+        loader = self.factory.create_loader("https://www.youtube.com/watch?v=abc123")
         assert isinstance(loader, YouTubeLoader)
     
     def test_get_loader_for_unsupported_format(self):
         """Test handling of unsupported file formats."""
         with pytest.raises(DocumentProcessingError):
-            self.factory.get_loader(Path("unknown.xyz"))
+            self.factory.create_loader(Path("unknown.xyz"))
     
     @patch('aimakerspace.document_utils.text_utils.TextFileLoader.load_documents')
     def test_load_documents_text_file(self, mock_load):
