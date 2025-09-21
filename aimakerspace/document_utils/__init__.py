@@ -11,7 +11,7 @@ from .pdf_utils import PDFLoader
 from .word_utils import WordDocumentLoader
 from .excel_utils import ExcelLoader
 from .youtube_utils import YouTubeLoader
-from .factory import DocumentUtilsFactory
+from .factory import DocumentLoaderFactory
 
 __all__ = [
     "DocumentLoader",
@@ -20,5 +20,5 @@ __all__ = [
     "WordDocumentLoader",
     "ExcelLoader",
     "YouTubeLoader",
-    "DocumentUtilsFactory",
+    "DocumentLoaderFactory",
 ]

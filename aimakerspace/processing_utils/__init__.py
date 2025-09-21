@@ -7,11 +7,11 @@ section detection, and other processing operations.
 
 from .section_detector import SectionDetector, HeadingPattern
 from .page_aware_chunker import PageAwareChunker
-from .text_chunker import TextChunker
+from .text_splitter import CharacterTextSplitter
 
 __all__ = [
     "SectionDetector",
     "HeadingPattern", 
     "PageAwareChunker",
-    "TextChunker"
+    "CharacterTextSplitter"
 ]

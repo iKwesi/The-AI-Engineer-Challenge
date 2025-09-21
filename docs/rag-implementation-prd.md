@@ -99,17 +99,17 @@ api/
   - [x] Provide clear error messages for unsupported formats
 
 ### Phase 3: Text Processing Utilities
-- [ ] **aimakerspace/processing_utils/text_splitter.py**
-  - [ ] Move `CharacterTextSplitter` from `text_utils.py`
-  - [ ] Enhance with sentence-aware splitting
-  - [ ] Add support for different splitting strategies
+- [x] **aimakerspace/processing_utils/text_splitter.py**
+  - [x] Move `CharacterTextSplitter` from `text_utils.py`
+  - [x] Enhance with sentence-aware splitting
+  - [x] Add support for different splitting strategies
   
-- [ ] **aimakerspace/processing_utils/rag_service.py**
-  - [ ] Create `RAGService` class for orchestration
-  - [ ] Integrate with existing `VectorDatabase`
-  - [ ] Integrate with existing `EmbeddingModel`
-  - [ ] Integrate with existing `ChatOpenAI`
-  - [ ] Implement context retrieval and response generation
+- [x] **aimakerspace/processing_utils/rag_service.py**
+  - [x] Create `RAGService` class for orchestration
+  - [x] Integrate with existing `VectorDatabase`
+  - [x] Integrate with existing `EmbeddingModel`
+  - [x] Integrate with existing `ChatOpenAI`
+  - [x] Implement context retrieval and response generation
 
 ### Phase 4: API Layer Enhancement
 - [ ] **api/models.py**
