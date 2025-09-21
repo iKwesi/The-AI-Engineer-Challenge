@@ -112,17 +112,18 @@ api/
   - [x] Implement context retrieval and response generation
 
 ### Phase 4: API Layer Enhancement
-- [ ] **api/models.py**
-  - [ ] Create Pydantic models for document upload requests
-  - [ ] Create models for RAG chat requests
-  - [ ] Create response models with proper validation
+- [x] **api/models.py**
+  - [x] Create Pydantic models for document upload requests
+  - [x] Create models for RAG chat requests
+  - [x] Create response models with proper validation
   
-- [ ] **api/app.py - New Endpoints**
-  - [ ] `POST /api/upload-document` - File upload endpoint
-  - [ ] `POST /api/process-youtube` - YouTube URL processing
-  - [ ] `POST /api/rag-chat` - RAG-powered chat endpoint
-  - [ ] `GET /api/documents` - List processed documents
-  - [ ] `DELETE /api/documents/{id}` - Remove documents from vector DB
+- [x] **api/app.py - New Endpoints**
+  - [x] `POST /api/upload-document` - File upload endpoint
+  - [x] `POST /api/process-youtube` - YouTube URL processing
+  - [x] `POST /api/rag-chat` - RAG-powered chat endpoint
+  - [x] `GET /api/documents` - List processed documents
+  - [x] `DELETE /api/documents/{id}` - Remove documents from vector DB
+  - [x] `GET /api/rag-stats` - Service statistics endpoint
 
 ### Phase 5: YouTube Integration
 - [ ] **YouTube URL Detection**
