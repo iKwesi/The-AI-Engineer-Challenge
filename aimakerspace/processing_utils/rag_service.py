@@ -76,8 +76,8 @@ class RAGService:
         self.page_aware_chunker = PageAwareChunker(self.chunking_config)
         
         # Initialize OpenAI components
-        self.embedding_model = EmbeddingModel(api_key=api_key, model=embedding_model_name)
-        self.chat_model = ChatOpenAI(api_key=api_key, model=chat_model_name)
+        self.embedding_model = EmbeddingModel(embeddings_model_name=embedding_model_name, api_key=api_key)
+        self.chat_model = ChatOpenAI(model_name=chat_model_name, api_key=api_key)
         
         # Initialize vector database
         self.vector_db = VectorDatabase()
