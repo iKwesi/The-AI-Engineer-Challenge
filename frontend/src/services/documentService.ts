@@ -300,7 +300,7 @@ export const getConversationModeStatus = async (apiKey: string): Promise<Convers
   const baseUrl = getBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/api/conversation-mode/status?api_key=${encodeURIComponent(apiKey)}`, {
+    const response = await fetch(`${baseUrl}/api/conversation/status?api_key=${encodeURIComponent(apiKey)}`, {
       method: "GET",
     });
 
@@ -309,7 +309,10 @@ export const getConversationModeStatus = async (apiKey: string): Promise<Convers
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    // The API returns {status: "success", conversation_status: {...}}
+    // We need to return just the conversation_status part
+    return data.conversation_status || data;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Failed to get conversation mode status: ${error.message}`);
