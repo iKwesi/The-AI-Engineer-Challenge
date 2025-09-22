@@ -88,11 +88,15 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   // Auto-upload files when they're added
   const handleFilesSelected = useCallback(async (files: File[]) => {
     addFiles(files);
-    // Automatically start upload after files are added
+    // Automatically start upload after files are added to state
+    // Use a longer delay to ensure state is updated and canUpload is true
     setTimeout(() => {
-      uploadFiles();
-    }, 100); // Small delay to ensure files are added to state
-  }, [addFiles, uploadFiles]);
+      const stats = getUploadStats();
+      if (stats.pending > 0 && !isUploading && apiKey?.trim()) {
+        uploadFiles();
+      }
+    }, 200); // Increased delay to ensure state is properly updated
+  }, [addFiles, uploadFiles, getUploadStats, isUploading, apiKey]);
 
   const handleYouTubeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
