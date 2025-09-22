@@ -53,22 +53,53 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
       ]);
 
       // Filter out invalid documents and ensure all required properties exist
-      const validDocuments = (docResponse.documents || []).filter((doc: any) => 
-        doc && 
-        typeof doc.id === 'string' && 
-        typeof doc.name === 'string' && 
-        typeof doc.type === 'string' &&
-        typeof doc.size === 'number' &&
-        typeof doc.chunks === 'number' &&
-        typeof doc.uploaded_at === 'string' &&
-        doc.id.trim() !== '' &&
-        doc.name.trim() !== ''
-      );
+      // More lenient validation to handle different backend response formats
+      const validDocuments = (docResponse.documents || []).filter((doc: any) => {
+        if (!doc) return false;
+        
+        // Log the document structure for debugging
+        console.log('Document validation check:', doc);
+        
+        // Basic validation - only require essential fields
+        const hasId = doc.id && typeof doc.id === 'string' && doc.id.trim() !== '';
+        const hasName = doc.name && typeof doc.name === 'string' && doc.name.trim() !== '';
+        
+        // More flexible validation for other fields
+        const hasValidType = doc.type !== undefined;
+        const hasValidSize = doc.size !== undefined && !isNaN(Number(doc.size));
+        const hasValidChunks = doc.chunks !== undefined && !isNaN(Number(doc.chunks));
+        const hasValidDate = doc.uploaded_at !== undefined;
+        
+        const isValid = hasId && hasName && hasValidType && hasValidSize && hasValidChunks && hasValidDate;
+        
+        if (!isValid) {
+          console.log('Document failed validation:', {
+            hasId,
+            hasName,
+            hasValidType,
+            hasValidSize,
+            hasValidChunks,
+            hasValidDate,
+            doc
+          });
+        }
+        
+        return isValid;
+      }).map((doc: any) => ({
+        // Normalize the document structure
+        id: String(doc.id),
+        name: String(doc.name),
+        type: String(doc.type || 'unknown'),
+        size: Number(doc.size) || 0,
+        chunks: Number(doc.chunks) || 0,
+        uploaded_at: String(doc.uploaded_at)
+      }));
       
       console.log('DocumentContext refresh:', {
         validDocumentsCount: validDocuments.length,
         backendMode: modeResponse.mode,
-        rawDocuments: docResponse.documents?.length || 0
+        rawDocuments: docResponse.documents?.length || 0,
+        rawDocumentSample: docResponse.documents?.[0] || null
       });
 
       // Update documents state first

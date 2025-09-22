@@ -61,8 +61,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         }
       }
       
-      // Refresh document list to update context
-      await refreshDocuments();
+      // Refresh document list to update context with a small delay to ensure backend is ready
+      setTimeout(async () => {
+        await refreshDocuments();
+      }, 500);
     }
 
     // Auto-hide success message after 5 seconds
@@ -94,8 +96,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         }
       }
       
-      // Refresh document list to update context
-      await refreshDocuments();
+      // Refresh document list to update context with a small delay to ensure backend is ready
+      setTimeout(async () => {
+        await refreshDocuments();
+      }, 500);
     }
 
     // Auto-hide success message after 5 seconds
