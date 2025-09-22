@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Youtube, X, Settings, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { Upload, FileText, Youtube, X, Settings, AlertCircle, CheckCircle, Loader, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from '@/lib/utils';
 import FileUpload from './FileUpload';
 import useDocumentUpload from '@/hooks/useDocumentUpload';
-import { hasYouTubeUrls, detectYouTubeUrls } from '@/services/documentService';
+import { hasYouTubeUrls, detectYouTubeUrls, enterDocumentMode, removeDocument } from '@/services/documentService';
+import { useDocumentContext } from '@/contexts/DocumentContext';
 import type { DocumentUploadResponse, YouTubeProcessResponse } from '@/services/documentService';
 
 export interface DocumentManagerProps {
@@ -34,34 +35,74 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [lastUploadResponse, setLastUploadResponse] = useState<DocumentUploadResponse | null>(null);
   const [lastYouTubeResponse, setLastYouTubeResponse] = useState<YouTubeProcessResponse | null>(null);
 
-  const handleUploadComplete = useCallback((response: DocumentUploadResponse) => {
+  // Use document context for state management
+  const { documents, isLoading: documentsLoading, error: documentsError, refreshDocuments, setDocumentMode, handleDocumentRemoved } = useDocumentContext();
+  const [removingDocuments, setRemovingDocuments] = useState<Set<string>>(new Set());
+
+  const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setLastUploadResponse(response);
     setShowUploadSuccess(true);
     
-    if (response.entered_document_mode) {
-      onDocumentModeEntered?.();
+    // If documents were successfully uploaded but document mode wasn't entered automatically,
+    // try to enter it manually
+    if (response.successful_files > 0) {
+      if (response.entered_document_mode) {
+        setDocumentMode(true);
+        onDocumentModeEntered?.();
+      } else {
+        // Try to enter document mode manually
+        try {
+          await enterDocumentMode(apiKey);
+          setDocumentMode(true);
+          onDocumentModeEntered?.();
+        } catch (error) {
+          console.warn('Failed to enter document mode manually:', error);
+          // Don't show error to user as documents were uploaded successfully
+        }
+      }
+      
+      // Refresh document list to update context
+      await refreshDocuments();
     }
 
     // Auto-hide success message after 5 seconds
     setTimeout(() => {
       setShowUploadSuccess(false);
     }, 5000);
-  }, [onDocumentModeEntered]);
+  }, [onDocumentModeEntered, apiKey, refreshDocuments, setDocumentMode]);
 
-  const handleYouTubeComplete = useCallback((response: YouTubeProcessResponse) => {
+  const handleYouTubeComplete = useCallback(async (response: YouTubeProcessResponse) => {
     setLastYouTubeResponse(response);
     setShowYouTubeSuccess(true);
     setYoutubeUrl(''); // Clear the input
     
-    if (response.entered_document_mode) {
-      onDocumentModeEntered?.();
+    // If YouTube was successfully processed but document mode wasn't entered automatically,
+    // try to enter it manually
+    if (response.status === 'success') {
+      if (response.entered_document_mode) {
+        setDocumentMode(true);
+        onDocumentModeEntered?.();
+      } else {
+        // Try to enter document mode manually
+        try {
+          await enterDocumentMode(apiKey);
+          setDocumentMode(true);
+          onDocumentModeEntered?.();
+        } catch (error) {
+          console.warn('Failed to enter document mode manually:', error);
+          // Don't show error to user as YouTube was processed successfully
+        }
+      }
+      
+      // Refresh document list to update context
+      await refreshDocuments();
     }
 
     // Auto-hide success message after 5 seconds
     setTimeout(() => {
       setShowYouTubeSuccess(false);
     }, 5000);
-  }, [onDocumentModeEntered]);
+  }, [onDocumentModeEntered, apiKey, refreshDocuments, setDocumentMode]);
 
   const handleError = useCallback((error: string) => {
     onError?.(error);
@@ -118,6 +159,56 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       // Error is already handled by the hook
     }
   }, [youtubeUrl, processYouTube, handleError]);
+
+  const handleRemoveDocument = useCallback(async (documentId: string, documentName: string) => {
+    if (!apiKey?.trim()) {
+      handleError("API key is required to remove documents");
+      return;
+    }
+
+    // Confirm removal
+    if (!window.confirm(`Are you sure you want to remove "${documentName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setRemovingDocuments(prev => new Set(prev).add(documentId));
+
+    try {
+      await removeDocument(documentId, apiKey);
+      
+      // Refresh documents and handle removal side effects
+      await handleDocumentRemoved();
+      
+      console.log(`Document "${documentName}" removed successfully`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove document';
+      handleError(errorMessage);
+      console.error('Error removing document:', error);
+    } finally {
+      setRemovingDocuments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(documentId);
+        return newSet;
+      });
+    }
+  }, [apiKey, handleError, handleDocumentRemoved]);
+
+  const formatFileSize = useCallback((bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }, []);
+
+  const formatUploadDate = useCallback((dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Unknown date';
+    }
+  }, []);
 
   const stats = getUploadStats();
 
@@ -292,6 +383,89 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 </Button>
               )}
             </div>
+
+            {/* Uploaded Documents Section */}
+            {documents.length > 0 && (
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-foreground">
+                    Uploaded Documents ({documents.length})
+                  </h4>
+                  {documentsLoading && (
+                    <Loader className="w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+
+                {documentsError && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">{documentsError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  {documents.map((document) => {
+                    const isRemoving = removingDocuments.has(document.id);
+                    
+                    return (
+                      <div
+                        key={document.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 border rounded-lg transition-colors",
+                          isRemoving ? "bg-muted opacity-50" : "bg-background hover:bg-muted/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h5 className="font-medium text-sm truncate" title={document.name}>
+                                {document.name}
+                              </h5>
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                {document.type.toUpperCase()}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{formatFileSize(document.size)}</span>
+                              <span>{document.chunks} chunk{document.chunks !== 1 ? 's' : ''}</span>
+                              <span>Uploaded {formatUploadDate(document.uploaded_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex-shrink-0 ml-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveDocument(document.id, document.name)}
+                            disabled={isRemoving}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                          >
+                            {isRemoving ? (
+                              <Loader className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Document Summary */}
+                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                  <strong>Total:</strong> {documents.length} document{documents.length !== 1 ? 's' : ''}, {' '}
+                  {documents.reduce((sum, doc) => sum + doc.chunks, 0)} chunk{documents.reduce((sum, doc) => sum + doc.chunks, 0) !== 1 ? 's' : ''}, {' '}
+                  {formatFileSize(documents.reduce((sum, doc) => sum + doc.size, 0))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -347,6 +521,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           </CardContent>
         </Card>
       )}
+
 
       {/* Help Text */}
       <div className="text-xs text-muted-foreground space-y-1">

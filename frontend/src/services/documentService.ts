@@ -319,6 +319,43 @@ export const getConversationModeStatus = async (apiKey: string): Promise<Convers
 };
 
 /**
+ * Enters document mode
+ * @param apiKey - The API key for authentication
+ * @returns Promise<{status: string, message: string}> - The enter response
+ */
+export const enterDocumentMode = async (apiKey: string): Promise<{status: string, message: string}> => {
+  if (!apiKey?.trim()) {
+    throw new Error("API key is required");
+  }
+
+  const baseUrl = getBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/api/conversation/enter-document-mode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to enter document mode: ${error.message}`);
+    }
+    throw new Error("Unknown error occurred while entering document mode");
+  }
+};
+
+/**
  * Exits document mode
  * @param apiKey - The API key for authentication
  * @returns Promise<{status: string, message: string}> - The exit response
@@ -331,7 +368,7 @@ export const exitDocumentMode = async (apiKey: string): Promise<{status: string,
   const baseUrl = getBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/api/conversation-mode/exit`, {
+    const response = await fetch(`${baseUrl}/api/conversation/exit-document-mode`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

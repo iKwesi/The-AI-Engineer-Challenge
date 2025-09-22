@@ -171,22 +171,22 @@ api/
   - [x] Extract and store video metadata
 
 ### Phase 6: Frontend Integration
-- [ ] **Single File Upload Component (Current)**
-  - [ ] Create drag-and-drop file upload interface
-  - [ ] Support multiple file formats
-  - [ ] Show upload progress and processing status
+- [x] **Single File Upload Component (Current)**
+  - [x] Create drag-and-drop file upload interface
+  - [x] Support multiple file formats
+  - [x] Show upload progress and processing status
   
-- [ ] **Multiple File Upload Enhancement (NEW REQUIREMENT)**
-  - [ ] Add `multiple` attribute to file input for batch selection
-  - [ ] Implement file preview list with individual file removal option
-  - [ ] Add upload progress tracking per file with visual indicators
-  - [ ] Enhanced drag & drop interface for multiple files
-  - [ ] File type validation before upload with user feedback
-  - [ ] Duplicate file detection and handling
-  - [ ] Error handling for individual file failures in batch
-  - [ ] Auto-enter document mode after successful batch upload
-  - [ ] Integration with new `/api/upload-documents` endpoint
-  - [ ] Batch upload cancellation and retry functionality
+- [x] **Multiple File Upload Enhancement (NEW REQUIREMENT)**
+  - [x] Add `multiple` attribute to file input for batch selection
+  - [x] Implement file preview list with individual file removal option
+  - [x] Add upload progress tracking per file with visual indicators
+  - [x] Enhanced drag & drop interface for multiple files
+  - [x] File type validation before upload with user feedback
+  - [x] Duplicate file detection and handling
+  - [x] Error handling for individual file failures in batch
+  - [x] Auto-enter document mode after successful batch upload
+  - [x] Integration with new `/api/upload-documents` endpoint
+  - [x] Batch upload cancellation and retry functionality
   
 - [ ] **YouTube Link Detection**
   - [ ] Auto-detect YouTube URLs in chat messages

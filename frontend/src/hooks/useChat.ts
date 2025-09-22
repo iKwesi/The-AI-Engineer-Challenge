@@ -1,11 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { processStreamingChat, type ChatRequest } from "../services/chatService";
+import { useState, useCallback } from "react";
+import { 
+  processStreamingChat, 
+  sendSmartChatRequest, 
+  confirmFallback,
+  getConversationStatus,
+  type ChatRequest,
+  type RAGChatResponse 
+} from "../services/chatService";
 
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
+  citations?: Array<{
+    chunk_id: string;
+    document_name: string;
+    document_id: string;
+    content_preview: string;
+  }>;
+  usedContext?: boolean;
+  confidenceScore?: number;
+}
+
+export interface FallbackRequest {
+  query: string;
+  explanation: string;
+  confidence_score: number;
 }
 
 export function useChat() {
@@ -14,6 +35,7 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [pendingFallback, setPendingFallback] = useState<FallbackRequest | null>(null);
 
   const sendChat = async (userMessage: string) => {
     if (!userMessage.trim()) return;
@@ -24,6 +46,7 @@ export function useChat() {
     setInputValue('');
     setLoading(true);
     setError(null);
+    setPendingFallback(null);
 
     // Prepare chat request
     const chatRequest: ChatRequest = {
@@ -33,26 +56,130 @@ export function useChat() {
     };
 
     try {
-      let assistantMessage = "";
+      // Use smart chat that automatically chooses RAG or regular chat
+      const response: RAGChatResponse = await sendSmartChatRequest(chatRequest);
       
-      // Add empty assistant message that will be updated with streaming content
-      setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
-      
-      const fullText = await processStreamingChat(chatRequest, (chunk: string) => {
-        assistantMessage += chunk;
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-          return updated;
+      if (!response.success) {
+        throw new Error(response.error || "Chat request failed");
+      }
+
+      if (response.needsFallback && response.fallbackRequest) {
+        // Handle fallback scenario
+        setPendingFallback({
+          query: response.fallbackRequest.query,
+          explanation: response.fallbackRequest.explanation,
+          confidence_score: response.fallbackRequest.confidence_score
         });
-      });
+        
+        // Add a message indicating fallback is needed
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `I couldn't find relevant information in your uploaded documents to answer: "${userMessage}"\n\n**Confidence Score:** ${(response.fallbackRequest.confidence_score * 100).toFixed(1)}%\n\n**Explanation:** ${response.fallbackRequest.explanation}\n\nWould you like me to answer using my general knowledge instead?`,
+          usedContext: false,
+          confidenceScore: response.fallbackRequest.confidence_score
+        }]);
+      } else {
+        // Add successful response
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: response.response || "No response received",
+          citations: response.citations,
+          usedContext: response.usedContext,
+          confidenceScore: response.confidenceScore
+        }]);
+      }
       
       setLoading(false);
-      return fullText;
+      return response.response;
     } catch (err) {
-      // Remove the empty assistant message on error
-      setMessages(prev => prev.slice(0, -1));
-      
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleFallbackConfirmation = async (useGeneralKnowledge: boolean) => {
+    if (!pendingFallback) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await confirmFallback(
+        pendingFallback.query, 
+        useGeneralKnowledge, 
+        apiKey
+      );
+
+      if (!response.success) {
+        throw new Error(response.error || "Fallback request failed");
+      }
+
+      if (useGeneralKnowledge && response.response) {
+        // Replace the fallback message with the general knowledge response
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: response.response || "No response received",
+            usedContext: false,
+            citations: []
+          };
+          return updated;
+        });
+      } else {
+        // User declined, check if documents still exist before staying in document mode
+        try {
+          const status = await getConversationStatus(apiKey);
+          const hasDocuments = status.documents && Array.isArray(status.documents) && status.documents.length > 0;
+          
+          if (!hasDocuments) {
+            // No documents available, inform user and suggest they upload documents
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: 'assistant',
+                content: "I notice you don't have any documents uploaded. To use document mode, please upload some documents first. For now, I can answer using my general knowledge if you'd like.",
+                usedContext: false,
+                citations: []
+              };
+              return updated;
+            });
+          } else {
+            // Documents exist, stay in document mode
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: 'assistant',
+                content: "I'll stay focused on your uploaded documents. Please try rephrasing your question or ask about content that's in your documents.",
+                usedContext: false,
+                citations: []
+              };
+              return updated;
+            });
+          }
+        } catch (statusError) {
+          // If we can't check status, default to the original message
+          console.warn('Failed to check document status after fallback:', statusError);
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: 'assistant',
+              content: "I'll stay focused on your uploaded documents. Please try rephrasing your question or ask about content that's in your documents.",
+              usedContext: false,
+              citations: []
+            };
+            return updated;
+          });
+        }
+      }
+
+      setPendingFallback(null);
+      setLoading(false);
+    } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -77,6 +204,8 @@ export function useChat() {
     handleSubmit, 
     apiKey, 
     setApiKey,
-    sendChat 
+    sendChat,
+    pendingFallback,
+    handleFallbackConfirmation
   };
 }

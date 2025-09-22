@@ -25,6 +25,8 @@ describe('ProfessionalChatInterface Integration Tests', () => {
     apiKey: '',
     setApiKey: mockSetApiKey,
     sendChat: mockSendChat,
+    pendingFallback: null,
+    handleFallbackConfirmation: jest.fn(),
   };
 
   beforeEach(() => {

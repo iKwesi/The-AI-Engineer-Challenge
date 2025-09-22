@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Upload, Youtube, FileText, X } from 'lucide-react';
+import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Youtube, FileText, X } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
@@ -13,10 +13,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import DocumentManager from '@/components/features/upload/DocumentManager';
 import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
 
-export interface RAGChatInterfaceProps {
+export interface SimpleChatInterfaceProps {
   messages: Message[];
   loading: boolean;
   error: string | null;
@@ -306,7 +305,7 @@ const YouTubeDetectionAlert: React.FC<{
   </Alert>
 );
 
-const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
+const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
   messages,
   loading,
   error,
@@ -323,7 +322,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showDocumentManager, setShowDocumentManager] = useState(false);
   const [youtubeDetection, setYoutubeDetection] = useState<{
     urls: string[];
     show: boolean;
@@ -417,107 +415,73 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
     }
   }, [apiKey]);
 
-  // Handle document mode entered
-  const handleDocumentModeEntered = useCallback(() => {
-    // Optionally refresh conversation mode status or show notification
-    console.log('Document mode entered');
-  }, []);
-
-  // Handle upload error
-  const handleUploadError = useCallback((error: string) => {
-    console.error('Upload error:', error);
-  }, []);
-
   // Check if we should show the welcome screen (no messages yet)
   const showWelcomeScreen = !messages || messages.length === 0;
 
   if (showWelcomeScreen) {
-    // Welcome screen layout - centered like ChatGPT with document upload
+    // Welcome screen layout - centered like ChatGPT
     return (
-      <div className="flex flex-col h-screen bg-background text-foreground">
+      <div className="flex flex-col h-full bg-background text-foreground">
         <header className="border-b bg-card p-4 shadow-sm">
           <div className="w-full flex items-center justify-between px-4">
             <h1 className="text-xl font-semibold">RAG AI Chat</h1>
-            <div className="flex items-center gap-2">
+            <div className="relative" ref={dropdownRef}>
               <Button
                 variant="ghost"
-                onClick={() => setShowDocumentManager(!showDocumentManager)}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-2 text-sm"
               >
-                <Upload className="w-4 h-4" />
-                Documents
+                <Settings className="w-4 h-4" />
+                Configuration
+                <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
               </Button>
-              <div className="relative" ref={dropdownRef}>
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <Settings className="w-4 h-4" />
-                  Configuration
-                  <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
-                </Button>
-                
-                {isDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="api-key-welcome">API Key</Label>
-                      <div className="flex items-center gap-2">
-                         <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <Input
-                          id="api-key-welcome"
-                          type="password"
-                          placeholder="Enter your API key"
-                          value={apiKey}
-                          onChange={(e) => setApiKey(e.target.value)}
-                          onKeyDown={handleConfigKeyDown}
-                          className="rounded-md w-64"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="model-welcome">Model</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 flex-shrink-0"></span>
-                        <Input 
-                          id="model-welcome" 
-                          type="text" 
-                          value={model} 
-                          onChange={(e) => setModel(e.target.value)}
-                          onKeyDown={handleConfigKeyDown}
-                          placeholder="Enter model name"
-                          className="rounded-md w-64" 
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        onClick={handleDoneClick}
-                        size="sm"
-                        className="text-sm"
-                      >
-                        Done
-                      </Button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="api-key-welcome">API Key</Label>
+                    <div className="flex items-center gap-2">
+                       <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Input
+                        id="api-key-welcome"
+                        type="password"
+                        placeholder="Enter your API key"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        onKeyDown={handleConfigKeyDown}
+                        className="rounded-md w-64"
+                      />
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="model-welcome">Model</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 h-4 flex-shrink-0"></span>
+                      <Input 
+                        id="model-welcome" 
+                        type="text" 
+                        value={model} 
+                        onChange={(e) => setModel(e.target.value)}
+                        onKeyDown={handleConfigKeyDown}
+                        placeholder="Enter model name"
+                        className="rounded-md w-64" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      onClick={handleDoneClick}
+                      size="sm"
+                      className="text-sm"
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
-
-        {/* Document Manager */}
-        {showDocumentManager && (
-          <div className="border-b bg-muted/20 p-4">
-            <div className="max-w-4xl mx-auto">
-              <DocumentManager
-                apiKey={apiKey}
-                onDocumentModeEntered={handleDocumentModeEntered}
-                onError={handleUploadError}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Centered welcome content */}
         <div className="flex-grow flex flex-col items-center justify-center p-4">
@@ -587,91 +551,68 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
 
   // Chat conversation layout - using flexbox instead of fixed positioning
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="flex flex-col h-full bg-background text-foreground">
       {/* Header */}
       <header className="flex-shrink-0 border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
           <h1 className="text-xl font-semibold">RAG AI Chat</h1>
-          <div className="flex items-center gap-2">
+          <div className="relative" ref={dropdownRef}>
             <Button
               variant="ghost"
-              onClick={() => setShowDocumentManager(!showDocumentManager)}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-2 text-sm"
             >
-              <Upload className="w-4 h-4" />
-              Documents
+              <Settings className="w-4 h-4" />
+              Configuration
+              <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
             </Button>
-            <div className="relative" ref={dropdownRef}>
-              <Button
-                variant="ghost"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 text-sm"
-              >
-                <Settings className="w-4 h-4" />
-                Configuration
-                <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
-              </Button>
-              
-              {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="api-key-chat">API Key</Label>
-                    <div className="flex items-center gap-2">
-                       <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <Input
-                        id="api-key-chat"
-                        type="password"
-                        placeholder="Enter your API key"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        onKeyDown={handleConfigKeyDown}
-                        className="rounded-md w-64"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="model-chat">Model</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="w-4 h-4 flex-shrink-0"></span>
-                      <Input 
-                        id="model-chat" 
-                        type="text" 
-                        value={model} 
-                        onChange={(e) => setModel(e.target.value)}
-                        onKeyDown={handleConfigKeyDown}
-                        placeholder="Enter model name"
-                        className="rounded-md w-64" 
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      onClick={handleDoneClick}
-                      size="sm"
-                      className="text-sm"
-                    >
-                      Done
-                    </Button>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="api-key-chat">API Key</Label>
+                  <div className="flex items-center gap-2">
+                     <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Input
+                      id="api-key-chat"
+                      type="password"
+                      placeholder="Enter your API key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
+                      className="rounded-md w-64"
+                    />
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="model-chat">Model</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 flex-shrink-0"></span>
+                    <Input 
+                      id="model-chat" 
+                      type="text" 
+                      value={model} 
+                      onChange={(e) => setModel(e.target.value)}
+                      onKeyDown={handleConfigKeyDown}
+                      placeholder="Enter model name"
+                      className="rounded-md w-64" 
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleDoneClick}
+                    size="sm"
+                    className="text-sm"
+                  >
+                    Done
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
-
-      {/* Document Manager */}
-      {showDocumentManager && (
-        <div className="flex-shrink-0 border-b bg-muted/20 p-4 max-h-96 overflow-y-auto">
-          <div className="max-w-4xl mx-auto">
-            <DocumentManager
-              apiKey={apiKey}
-              onDocumentModeEntered={handleDocumentModeEntered}
-              onError={handleUploadError}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Chat Messages Area - takes remaining space */}
       <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
@@ -748,4 +689,4 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   );
 };
 
-export default RAGChatInterface;
+export default SimpleChatInterface;
