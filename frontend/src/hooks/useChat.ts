@@ -34,8 +34,26 @@ export function useChat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => {
+    // Initialize API key from localStorage if available
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('rag-chat-api-key') || '';
+    }
+    return '';
+  });
   const [pendingFallback, setPendingFallback] = useState<FallbackRequest | null>(null);
+
+  // Persist API key to localStorage when it changes
+  const handleSetApiKey = useCallback((key: string) => {
+    setApiKey(key);
+    if (typeof window !== 'undefined') {
+      if (key.trim()) {
+        localStorage.setItem('rag-chat-api-key', key);
+      } else {
+        localStorage.removeItem('rag-chat-api-key');
+      }
+    }
+  }, []);
 
   const sendChat = async (userMessage: string) => {
     if (!userMessage.trim()) return;
@@ -203,7 +221,7 @@ export function useChat() {
     setInputValue, 
     handleSubmit, 
     apiKey, 
-    setApiKey,
+    setApiKey: handleSetApiKey,
     sendChat,
     pendingFallback,
     handleFallbackConfirmation
