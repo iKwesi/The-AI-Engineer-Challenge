@@ -99,17 +99,48 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
     // Refresh documents to get current state
     await refreshDocuments();
     
-    // If no documents remain after removal, ensure we exit document mode
-    if (documents.length === 0 && isDocumentMode && apiKey?.trim()) {
+    // Check if we need to exit document mode after refresh
+    // Use a small delay to ensure the refresh has completed
+    setTimeout(async () => {
       try {
-        await exitDocumentMode(apiKey);
-        setIsDocumentMode(false);
-        console.log('Last document removed, exited document mode');
+        // Get fresh document list and conversation status
+        const [docResponse, modeResponse] = await Promise.all([
+          getDocumentList(apiKey),
+          getConversationModeStatus(apiKey)
+        ]);
+
+        const validDocuments = (docResponse.documents || []).filter((doc: any) => 
+          doc && 
+          typeof doc.id === 'string' && 
+          typeof doc.name === 'string' && 
+          typeof doc.type === 'string' &&
+          typeof doc.size === 'number' &&
+          typeof doc.chunks === 'number' &&
+          typeof doc.uploaded_at === 'string' &&
+          doc.id.trim() !== '' &&
+          doc.name.trim() !== ''
+        );
+
+        // If no valid documents remain but we're still in document mode, exit it
+        if (validDocuments.length === 0 && modeResponse.mode === 'document' && apiKey?.trim()) {
+          console.log('No documents remaining, exiting document mode');
+          await exitDocumentMode(apiKey);
+          setIsDocumentMode(false);
+          setDocuments([]);
+          console.log('Successfully exited document mode after document removal');
+        } else {
+          // Update state with current documents
+          setDocuments(validDocuments);
+          setIsDocumentMode(modeResponse.mode === 'document');
+        }
       } catch (error) {
-        console.warn('Failed to exit document mode after document removal:', error);
+        console.warn('Failed to handle document removal properly:', error);
+        // On error, assume no documents and general mode
+        setDocuments([]);
+        setIsDocumentMode(false);
       }
-    }
-  }, [refreshDocuments, documents.length, isDocumentMode, apiKey]);
+    }, 100);
+  }, [apiKey]);
 
   // Initial load and refresh when apiKey changes
   useEffect(() => {
