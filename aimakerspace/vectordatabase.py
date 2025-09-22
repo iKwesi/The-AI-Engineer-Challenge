@@ -23,7 +23,7 @@ class VectorDatabase:
 
     def __init__(self, embedding_model: Optional[EmbeddingModel] = None):
         self.vectors: Dict[str, np.ndarray] = {}
-        self.embedding_model = embedding_model or EmbeddingModel()
+        self.embedding_model = embedding_model
 
     def insert(self, key: str, vector: Iterable[float]) -> None:
         """Store ``vector`` so that it can be retrieved with ``key`` later on."""

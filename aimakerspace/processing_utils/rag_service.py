@@ -79,8 +79,8 @@ class RAGService:
         self.embedding_model = EmbeddingModel(embeddings_model_name=embedding_model_name, api_key=api_key)
         self.chat_model = ChatOpenAI(model_name=chat_model_name, api_key=api_key)
         
-        # Initialize vector database
-        self.vector_db = VectorDatabase()
+        # Initialize vector database with embedding model
+        self.vector_db = VectorDatabase(embedding_model=self.embedding_model)
         
         # Initialize conversation mode manager
         self.conversation_manager = ConversationModeManager()
