@@ -359,6 +359,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 onClick={uploadFiles}
                 disabled={!canUpload}
                 className="flex items-center gap-2"
+                title={!apiKey?.trim() ? "Please enter your API key in the chat configuration first" : !canUpload ? "No files to upload" : "Upload files"}
               >
                 {isUploading ? (
                   <>
@@ -383,6 +384,25 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 </Button>
               )}
             </div>
+
+            {/* API Key Required Message */}
+            {!apiKey?.trim() && stats.pending > 0 && (
+              <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription>
+                  <strong>API Key Required:</strong> Please enter your API key in the chat configuration (click the Settings button in the chat area) to enable file uploads.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Debug Info (remove in production) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                <strong>Debug:</strong> API Key: {apiKey ? '✓ Present' : '✗ Missing'}, 
+                Pending: {stats.pending}, 
+                Can Upload: {canUpload ? '✓' : '✗'}
+              </div>
+            )}
 
             {/* Uploaded Documents Section */}
             {documents.length > 0 && (
