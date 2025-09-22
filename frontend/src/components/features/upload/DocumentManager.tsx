@@ -29,7 +29,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'files' | 'youtube'>('files');
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [uploadMode, setUploadMode] = useState<'single' | 'multiple'>('single');
+  // Removed uploadMode state - always use multiple file mode
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [showYouTubeSuccess, setShowYouTubeSuccess] = useState(false);
   const [lastUploadResponse, setLastUploadResponse] = useState<DocumentUploadResponse | null>(null);
@@ -305,20 +305,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 </CardDescription>
               </div>
               
-              {/* Upload Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor="upload-mode" className="text-sm">Mode:</Label>
-                <select
-                  id="upload-mode"
-                  value={uploadMode}
-                  onChange={(e) => setUploadMode(e.target.value as 'single' | 'multiple')}
-                  className="text-sm border rounded px-2 py-1 bg-background"
-                  disabled={isUploading || stats.total > 0}
-                >
-                  <option value="single">Single File</option>
-                  <option value="multiple">Multiple Files</option>
-                </select>
-              </div>
+              {/* Mode selector removed - always supports multiple files */}
             </div>
           </CardHeader>
           
@@ -328,7 +315,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               onFilesSelected={handleFilesSelected}
               onFileRemove={removeFile}
               uploadedFiles={uploadedFiles}
-              multiple={uploadMode === 'multiple'}
+              multiple={true}
               maxFiles={10}
               maxSizeBytes={50 * 1024 * 1024} // 50MB
               disabled={isUploading}
@@ -373,7 +360,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    Upload {uploadMode === 'multiple' ? 'Files' : 'File'}
+                    Upload Files
                   </>
                 )}
               </Button>
@@ -553,7 +540,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           <strong>Supported formats:</strong> PDF, TXT, DOCX, DOC, XLSX, XLS, CSV
         </p>
         <p>
-          <strong>File limits:</strong> {uploadMode === 'single' ? '50MB per file' : '50MB total for all files'}
+          <strong>File limits:</strong> 50MB total for all files
         </p>
         <p>
           <strong>Document mode:</strong> Automatically activated after successful upload

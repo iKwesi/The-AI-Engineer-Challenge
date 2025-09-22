@@ -213,7 +213,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )} />
         
         <p className="text-sm font-medium mb-1">
-          {isDragOver ? "Drop files here" : `Click to upload or drag and drop`}
+          {isDragOver ? "Drop files here" : `Drag and drop files here or click to upload`}
         </p>
         
         <p className="text-xs text-muted-foreground">
