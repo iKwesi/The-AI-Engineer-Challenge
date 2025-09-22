@@ -65,18 +65,36 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
         doc.name.trim() !== ''
       );
       
-      setDocuments(validDocuments);
-      setIsDocumentMode(modeResponse.mode === 'document');
+      console.log('DocumentContext refresh:', {
+        validDocumentsCount: validDocuments.length,
+        backendMode: modeResponse.mode,
+        rawDocuments: docResponse.documents?.length || 0
+      });
 
-      // If we're in document mode but have no documents, exit document mode
-      if (modeResponse.mode === 'document' && (!docResponse.documents || docResponse.documents.length === 0)) {
-        console.log('Document mode active but no documents found, exiting document mode');
-        try {
-          await exitDocumentMode(apiKey);
-          setIsDocumentMode(false);
-        } catch (exitError) {
-          console.warn('Failed to exit document mode:', exitError);
+      // CRITICAL FIX: If no valid documents exist, force exit document mode
+      if (validDocuments.length === 0) {
+        console.log('No valid documents found, forcing exit from document mode');
+        setDocuments([]);
+        setIsDocumentMode(false);
+        
+        // If backend thinks we're in document mode, exit it
+        if (modeResponse.mode === 'document') {
+          console.log('Backend is in document mode but no documents exist, exiting...');
+          try {
+            await exitDocumentMode(apiKey);
+            console.log('Successfully exited document mode');
+          } catch (exitError) {
+            console.warn('Failed to exit document mode:', exitError);
+          }
         }
+      } else {
+        // We have valid documents, update state accordingly
+        setDocuments(validDocuments);
+        setIsDocumentMode(modeResponse.mode === 'document');
+        
+        // If we have documents but not in document mode, we might want to enter it
+        // But let's be conservative and only set the state based on backend response
+        console.log(`Found ${validDocuments.length} valid documents, mode: ${modeResponse.mode}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh documents';
