@@ -102,6 +102,7 @@ class RAGService:
         source: Union[Path, str], 
         document_id: Optional[str] = None,
         use_page_aware_chunking: bool = True,
+        filename_override: Optional[str] = None,
         **loader_kwargs
     ) -> ProcessedDocument:
         """
@@ -129,6 +130,10 @@ class RAGService:
             document = documents[0]
             if document_id:
                 document.document_id = document_id
+            
+            # Override filename metadata if provided
+            if filename_override:
+                document.metadata['filename'] = filename_override
             
             # Step 2: Chunk document
             if use_page_aware_chunking and hasattr(document, 'structure'):

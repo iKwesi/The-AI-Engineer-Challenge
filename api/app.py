@@ -336,7 +336,8 @@ async def upload_document(
             processed_doc = await rag.process_document(
                 source=Path(tmp_file_path),
                 document_id=file.filename,
-                use_page_aware_chunking=True
+                use_page_aware_chunking=True,
+                filename_override=file.filename  # Override the temporary filename
             )
             
             return DocumentUploadResponse(
