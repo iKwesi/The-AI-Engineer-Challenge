@@ -39,40 +39,6 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const { documents, isLoading: documentsLoading, error: documentsError, refreshDocuments, setDocumentMode, handleDocumentRemoved } = useDocumentContext();
   const [removingDocuments, setRemovingDocuments] = useState<Set<string>>(new Set());
 
-  const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
-    setLastUploadResponse(response);
-    setShowUploadSuccess(true);
-    
-    // If documents were successfully uploaded but document mode wasn't entered automatically,
-    // try to enter it manually
-    if (response.successful_files > 0) {
-      if (response.entered_document_mode) {
-        setDocumentMode(true);
-        onDocumentModeEntered?.();
-      } else {
-        // Try to enter document mode manually
-        try {
-          await enterDocumentMode(apiKey);
-          setDocumentMode(true);
-          onDocumentModeEntered?.();
-        } catch (error) {
-          console.warn('Failed to enter document mode manually:', error);
-          // Don't show error to user as documents were uploaded successfully
-        }
-      }
-      
-      // Refresh document list to update context with a small delay to ensure backend is ready
-      setTimeout(async () => {
-        await refreshDocuments();
-      }, 500);
-    }
-
-    // Auto-hide success message after 5 seconds
-    setTimeout(() => {
-      setShowUploadSuccess(false);
-    }, 5000);
-  }, [onDocumentModeEntered, apiKey, refreshDocuments, setDocumentMode]);
-
   const handleYouTubeComplete = useCallback(async (response: YouTubeProcessResponse) => {
     setLastYouTubeResponse(response);
     setShowYouTubeSuccess(true);
@@ -125,7 +91,59 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     canUpload
   } = useDocumentUpload({
     apiKey,
-    onUploadComplete: handleUploadComplete,
+    onUploadComplete: async (response: DocumentUploadResponse) => {
+      setLastUploadResponse(response);
+      setShowUploadSuccess(true);
+      
+      // If documents were successfully uploaded but document mode wasn't entered automatically,
+      // try to enter it manually
+      if (response.successful_files > 0) {
+        if (response.entered_document_mode) {
+          setDocumentMode(true);
+          onDocumentModeEntered?.();
+        } else {
+          // Try to enter document mode manually
+          try {
+            await enterDocumentMode(apiKey);
+            setDocumentMode(true);
+            onDocumentModeEntered?.();
+          } catch (error) {
+            console.warn('Failed to enter document mode manually:', error);
+            // Don't show error to user as documents were uploaded successfully
+          }
+        }
+        
+        // Refresh document list to update context with a small delay to ensure backend is ready
+        setTimeout(async () => {
+          await refreshDocuments();
+        }, 500);
+        
+        // Clear successfully uploaded files from the selected files list after a short delay
+        // This ensures the upload process is complete before clearing
+        setTimeout(() => {
+          if (response.status === 'success') {
+            // All files were successful, clear everything
+            clearFiles();
+          } else {
+            // Some files failed, only remove the successful ones
+            response.results.forEach(result => {
+              if (result.status === 'success') {
+                // Find and remove the successful file from uploadedFiles
+                const fileToRemove = uploadedFiles.find(f => f.file.name === result.filename);
+                if (fileToRemove) {
+                  removeFile(fileToRemove.id);
+                }
+              }
+            });
+          }
+        }, 1000); // Wait 1 second to ensure upload process is complete
+      }
+
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setShowUploadSuccess(false);
+      }, 5000);
+    },
     onYouTubeProcessComplete: handleYouTubeComplete,
     onError: handleError
   });
