@@ -60,39 +60,35 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
         // Log the document structure for debugging
         console.log('Document validation check:', doc);
         
-        // Basic validation - only require essential fields
-        const hasId = doc.id && typeof doc.id === 'string' && doc.id.trim() !== '';
-        const hasName = doc.name && typeof doc.name === 'string' && doc.name.trim() !== '';
+        // Check for the actual backend field names
+        const hasId = (doc.document_id || doc.id) && typeof (doc.document_id || doc.id) === 'string' && (doc.document_id || doc.id).trim() !== '';
+        const hasName = (doc.filename || doc.name) && typeof (doc.filename || doc.name) === 'string' && (doc.filename || doc.name).trim() !== '';
         
         // More flexible validation for other fields
-        const hasValidType = doc.type !== undefined;
-        const hasValidSize = doc.size !== undefined && !isNaN(Number(doc.size));
-        const hasValidChunks = doc.chunks !== undefined && !isNaN(Number(doc.chunks));
-        const hasValidDate = doc.uploaded_at !== undefined;
+        const hasValidType = (doc.document_type || doc.type) !== undefined;
+        const hasValidChunks = (doc.chunk_count || doc.chunks) !== undefined && !isNaN(Number(doc.chunk_count || doc.chunks));
         
-        const isValid = hasId && hasName && hasValidType && hasValidSize && hasValidChunks && hasValidDate;
+        const isValid = hasId && hasName && hasValidType && hasValidChunks;
         
         if (!isValid) {
           console.log('Document failed validation:', {
             hasId,
             hasName,
             hasValidType,
-            hasValidSize,
             hasValidChunks,
-            hasValidDate,
             doc
           });
         }
         
         return isValid;
       }).map((doc: any) => ({
-        // Normalize the document structure
-        id: String(doc.id),
-        name: String(doc.name),
-        type: String(doc.type || 'unknown'),
-        size: Number(doc.size) || 0,
-        chunks: Number(doc.chunks) || 0,
-        uploaded_at: String(doc.uploaded_at)
+        // Normalize the document structure to match frontend expectations
+        id: String(doc.document_id || doc.id),
+        name: String(doc.filename || doc.name),
+        type: String(doc.document_type || doc.type || 'unknown'),
+        size: Number(doc.file_size || doc.size || doc.word_count || 0), // Prefer actual file size, fallback to word count
+        chunks: Number(doc.chunk_count || doc.chunks || 0),
+        uploaded_at: String(doc.processing_metadata?.processing_time || doc.uploaded_at || new Date().toISOString())
       }));
       
       console.log('DocumentContext refresh:', {
