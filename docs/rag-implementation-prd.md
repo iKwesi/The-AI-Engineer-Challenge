@@ -148,6 +148,16 @@ api/
   - [x] `GET /api/conversation-mode/status` - Get current mode and documents
   - [x] `POST /api/conversation-mode/resolve-conflict` - Handle multi-document conflicts
 
+### Phase 4.6: Multiple File Upload Backend Enhancement (NEW REQUIREMENT)
+- [ ] **Enhanced API Endpoints**
+  - [ ] `POST /api/upload-documents` - Multiple file upload endpoint (batch processing)
+  - [ ] Update Pydantic models to support List[UploadFile] requests
+  - [ ] Add batch processing response models with per-file status
+  - [ ] Implement sequential file processing with error handling per file
+  - [ ] Auto-enter document mode after successful batch upload
+  - [ ] Add file validation and size checking for each file in batch
+  - [ ] Maintain backward compatibility with single file endpoint
+
 ### Phase 5: YouTube Integration
 - [x] **YouTube URL Detection**
   - [x] Implement regex pattern for YouTube URL detection
@@ -161,10 +171,22 @@ api/
   - [x] Extract and store video metadata
 
 ### Phase 6: Frontend Integration
-- [ ] **File Upload Component**
+- [ ] **Single File Upload Component (Current)**
   - [ ] Create drag-and-drop file upload interface
   - [ ] Support multiple file formats
   - [ ] Show upload progress and processing status
+  
+- [ ] **Multiple File Upload Enhancement (NEW REQUIREMENT)**
+  - [ ] Add `multiple` attribute to file input for batch selection
+  - [ ] Implement file preview list with individual file removal option
+  - [ ] Add upload progress tracking per file with visual indicators
+  - [ ] Enhanced drag & drop interface for multiple files
+  - [ ] File type validation before upload with user feedback
+  - [ ] Duplicate file detection and handling
+  - [ ] Error handling for individual file failures in batch
+  - [ ] Auto-enter document mode after successful batch upload
+  - [ ] Integration with new `/api/upload-documents` endpoint
+  - [ ] Batch upload cancellation and retry functionality
   
 - [ ] **YouTube Link Detection**
   - [ ] Auto-detect YouTube URLs in chat messages
