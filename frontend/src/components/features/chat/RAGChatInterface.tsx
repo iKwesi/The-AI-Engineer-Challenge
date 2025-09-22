@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Upload, Youtube } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Upload, Youtube, FileText, X } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
@@ -14,9 +14,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import DocumentManager from '@/components/features/upload/DocumentManager';
-import { hasYouTubeUrls, detectYouTubeUrls } from '@/services/documentService';
+import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
 
-export interface ProfessionalChatInterfaceProps {
+export interface RAGChatInterfaceProps {
   messages: Message[];
   loading: boolean;
   error: string | null;
@@ -225,7 +225,56 @@ const LoadingIndicator: React.FC = () => (
   </div>
 );
 
-const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
+const YouTubeDetectionAlert: React.FC<{ 
+  urls: string[], 
+  onProcess: (url: string) => void,
+  onDismiss: () => void,
+  isProcessing: boolean 
+}> = ({ urls, onProcess, onDismiss, isProcessing }) => (
+  <Alert className="border-blue-200 bg-blue-50 text-blue-800">
+    <Youtube className="h-4 w-4 text-blue-600" />
+    <AlertTitle>YouTube URL Detected!</AlertTitle>
+    <AlertDescription className="space-y-2">
+      <p>Found YouTube URL(s) in your message. Would you like to process the video content?</p>
+      <div className="flex flex-wrap gap-2">
+        {urls.map((url, index) => (
+          <Button
+            key={index}
+            size="sm"
+            variant="outline"
+            onClick={() => onProcess(url)}
+            disabled={isProcessing}
+            className="text-blue-700 border-blue-300 hover:bg-blue-100"
+          >
+            {isProcessing ? (
+              <>
+                <Loader className="w-3 h-3 animate-spin mr-1" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Youtube className="w-3 h-3 mr-1" />
+                Process Video
+              </>
+            )}
+          </Button>
+        ))}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onDismiss}
+          disabled={isProcessing}
+          className="text-blue-700 hover:bg-blue-100"
+        >
+          <X className="w-3 h-3 mr-1" />
+          Dismiss
+        </Button>
+      </div>
+    </AlertDescription>
+  </Alert>
+);
+
+const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   messages,
   loading,
   error,
@@ -240,10 +289,28 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showDocumentManager, setShowDocumentManager] = useState(false);
+  const [youtubeDetection, setYoutubeDetection] = useState<{
+    urls: string[];
+    show: boolean;
+  }>({ urls: [], show: false });
+  const [isProcessingYouTube, setIsProcessingYouTube] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const documentManagerRef = useRef<HTMLDivElement>(null);
+  const [documentManagerHeight, setDocumentManagerHeight] = useState(0);
 
   // Track if textarea is multi-line
   const isMultiLine = (inputValue && inputValue.includes('\n')) || (textareaRef.current && textareaRef.current.scrollHeight > textareaRef.current.clientHeight);
+
+  // Detect YouTube URLs in input
+  useEffect(() => {
+    if (inputValue && hasYouTubeUrls(inputValue)) {
+      const urls = detectYouTubeUrls(inputValue);
+      setYoutubeDetection({ urls, show: true });
+    } else {
+      setYoutubeDetection({ urls: [], show: false });
+    }
+  }, [inputValue]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -273,6 +340,25 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     }
   }, [messages, loading]);
 
+  // Measure document manager height when it's shown/hidden
+  useEffect(() => {
+    if (documentManagerRef.current && showDocumentManager) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setDocumentManagerHeight(entry.contentRect.height);
+        }
+      });
+      
+      resizeObserver.observe(documentManagerRef.current);
+      
+      return () => {
+        resizeObserver.disconnect();
+      };
+    } else {
+      setDocumentManagerHeight(0);
+    }
+  }, [showDocumentManager]);
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -300,79 +386,131 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     setIsDropdownOpen(false);
   };
 
+  // Handle YouTube processing
+  const handleYouTubeProcess = useCallback(async (url: string) => {
+    if (!apiKey?.trim()) {
+      return;
+    }
+
+    setIsProcessingYouTube(true);
+    try {
+      await processYouTubeUrl(url, apiKey);
+      setYoutubeDetection({ urls: [], show: false });
+      // Optionally show success message or refresh document mode status
+    } catch (error) {
+      console.error('YouTube processing failed:', error);
+    } finally {
+      setIsProcessingYouTube(false);
+    }
+  }, [apiKey]);
+
+  // Handle document mode entered
+  const handleDocumentModeEntered = useCallback(() => {
+    // Optionally refresh conversation mode status or show notification
+    console.log('Document mode entered');
+  }, []);
+
+  // Handle upload error
+  const handleUploadError = useCallback((error: string) => {
+    console.error('Upload error:', error);
+  }, []);
+
   // Check if we should show the welcome screen (no messages yet)
   const showWelcomeScreen = !messages || messages.length === 0;
 
   if (showWelcomeScreen) {
-    // Welcome screen layout - centered like ChatGPT
+    // Welcome screen layout - centered like ChatGPT with document upload
     return (
       <div className="flex flex-col h-screen bg-background text-foreground">
-      <header className="border-b bg-card p-4 shadow-sm">
-        <div className="w-full flex items-center justify-between px-4">
-          <h1 className="text-xl font-semibold">AI Chat</h1>
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant="ghost"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 text-sm"
-            >
-              <Settings className="w-4 h-4" />
-              Configuration
-              <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
-            </Button>
-            
-            {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="api-key-welcome">API Key</Label>
-                  <div className="flex items-center gap-2">
-                     <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <Input
-                      id="api-key-welcome"
-                      type="password"
-                      placeholder="Enter your API key"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      onKeyDown={handleConfigKeyDown}
-                      className="rounded-md w-64"
-                    />
+        <header className="border-b bg-card p-4 shadow-sm">
+          <div className="w-full flex items-center justify-between px-4">
+            <h1 className="text-xl font-semibold">RAG AI Chat</h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowDocumentManager(!showDocumentManager)}
+                className="flex items-center gap-2 text-sm"
+              >
+                <Upload className="w-4 h-4" />
+                Documents
+              </Button>
+              <div className="relative" ref={dropdownRef}>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <Settings className="w-4 h-4" />
+                  Configuration
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+                </Button>
+                
+                {isDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="api-key-welcome">API Key</Label>
+                      <div className="flex items-center gap-2">
+                         <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <Input
+                          id="api-key-welcome"
+                          type="password"
+                          placeholder="Enter your API key"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          onKeyDown={handleConfigKeyDown}
+                          className="rounded-md w-64"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="model-welcome">Model</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 flex-shrink-0"></span>
+                        <Input 
+                          id="model-welcome" 
+                          type="text" 
+                          value={model} 
+                          onChange={(e) => setModel(e.target.value)}
+                          onKeyDown={handleConfigKeyDown}
+                          placeholder="Enter model name"
+                          className="rounded-md w-64" 
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={handleDoneClick}
+                        size="sm"
+                        className="text-sm"
+                      >
+                        Done
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model-welcome">Model</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex-shrink-0"></span>
-                    <Input 
-                      id="model-welcome" 
-                      type="text" 
-                      value={model} 
-                      onChange={(e) => setModel(e.target.value)}
-                      onKeyDown={handleConfigKeyDown}
-                      placeholder="Enter model name"
-                      className="rounded-md w-64" 
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={handleDoneClick}
-                    size="sm"
-                    className="text-sm"
-                  >
-                    Done
-                  </Button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+
+        {/* Document Manager */}
+        {showDocumentManager && (
+          <div className="border-b bg-muted/20 p-4">
+            <div className="max-w-4xl mx-auto">
+              <DocumentManager
+                apiKey={apiKey}
+                onDocumentModeEntered={handleDocumentModeEntered}
+                onError={handleUploadError}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Centered welcome content */}
         <div className="flex-grow flex flex-col items-center justify-center p-4">
           <div className="max-w-2xl w-full text-center space-y-8">
             <h2 className="text-3xl font-semibold text-foreground">
-              What&apos;s on the agenda today?
+              Chat with your documents and YouTube videos
             </h2>
             
             {/* Show loading state */}
@@ -386,6 +524,16 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
+            {/* YouTube Detection Alert */}
+            {youtubeDetection.show && (
+              <YouTubeDetectionAlert
+                urls={youtubeDetection.urls}
+                onProcess={handleYouTubeProcess}
+                onDismiss={() => setYoutubeDetection({ urls: [], show: false })}
+                isProcessing={isProcessingYouTube}
+              />
+            )}
             
             <form onSubmit={handleSubmit} className="w-full">
               <div className={cn(
@@ -398,7 +546,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything"
+                  placeholder="Ask me anything or paste a YouTube URL"
                   className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
                   aria-label="Chat input"
                 />
@@ -429,66 +577,97 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <header className="border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
-          <h1 className="text-xl font-semibold">AI Chat</h1>
-          <div className="relative" ref={dropdownRef}>
+          <h1 className="text-xl font-semibold">RAG AI Chat</h1>
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => setShowDocumentManager(!showDocumentManager)}
               className="flex items-center gap-2 text-sm"
             >
-              <Settings className="w-4 h-4" />
-              Configuration
-              <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+              <Upload className="w-4 h-4" />
+              Documents
             </Button>
-            
-            {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="api-key-chat">API Key</Label>
-                  <div className="flex items-center gap-2">
-                     <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <Input
-                      id="api-key-chat"
-                      type="password"
-                      placeholder="Enter your API key"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      onKeyDown={handleConfigKeyDown}
-                      className="rounded-md w-64"
-                    />
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="ghost"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 text-sm"
+              >
+                <Settings className="w-4 h-4" />
+                Configuration
+                <ChevronDown className={cn("w-4 h-4 transition-transform", isDropdownOpen && "rotate-180")} />
+              </Button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50 p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="api-key-chat">API Key</Label>
+                    <div className="flex items-center gap-2">
+                       <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Input
+                        id="api-key-chat"
+                        type="password"
+                        placeholder="Enter your API key"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        onKeyDown={handleConfigKeyDown}
+                        className="rounded-md w-64"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="model-chat">Model</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 h-4 flex-shrink-0"></span>
+                      <Input 
+                        id="model-chat" 
+                        type="text" 
+                        value={model} 
+                        onChange={(e) => setModel(e.target.value)}
+                        onKeyDown={handleConfigKeyDown}
+                        placeholder="Enter model name"
+                        className="rounded-md w-64" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      onClick={handleDoneClick}
+                      size="sm"
+                      className="text-sm"
+                    >
+                      Done
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model-chat">Model</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex-shrink-0"></span>
-                    <Input 
-                      id="model-chat" 
-                      type="text" 
-                      value={model} 
-                      onChange={(e) => setModel(e.target.value)}
-                      onKeyDown={handleConfigKeyDown}
-                      placeholder="Enter model name"
-                      className="rounded-md w-64" 
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={handleDoneClick}
-                    size="sm"
-                    className="text-sm"
-                  >
-                    Done
-                  </Button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      <div ref={scrollAreaRef} className="fixed top-20 bottom-24 left-0 right-0 overflow-y-auto">
+      {/* Document Manager */}
+      {showDocumentManager && (
+        <div ref={documentManagerRef} className="border-b bg-muted/20 p-4 max-h-96 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            <DocumentManager
+              apiKey={apiKey}
+              onDocumentModeEntered={handleDocumentModeEntered}
+              onError={handleUploadError}
+            />
+          </div>
+        </div>
+      )}
+
+      <div 
+        ref={scrollAreaRef} 
+        className="overflow-y-auto fixed bottom-24 left-0 right-0"
+        style={{
+          top: showDocumentManager 
+            ? `${80 + documentManagerHeight}px` // 80px for header
+            : '80px' // Just header height
+        }}
+      >
         <div className="max-w-4xl mx-auto p-4 space-y-6">
           {messages.map((msg, index) => (
             <MessageBubble key={index} message={msg} />
@@ -505,7 +684,17 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
       </div>
 
       <footer className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-4">
+          {/* YouTube Detection Alert */}
+          {youtubeDetection.show && (
+            <YouTubeDetectionAlert
+              urls={youtubeDetection.urls}
+              onProcess={handleYouTubeProcess}
+              onDismiss={() => setYoutubeDetection({ urls: [], show: false })}
+              isProcessing={isProcessingYouTube}
+            />
+          )}
+
           <form
             onSubmit={handleSubmit}
             className="flex items-end"
@@ -520,7 +709,7 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything"
+                placeholder="Ask me anything or paste a YouTube URL"
                 className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
                 aria-label="Chat input"
               />
@@ -546,4 +735,4 @@ const ProfessionalChatInterface: React.FC<ProfessionalChatInterfaceProps> = ({
   );
 };
 
-export default ProfessionalChatInterface;
+export default RAGChatInterface;
