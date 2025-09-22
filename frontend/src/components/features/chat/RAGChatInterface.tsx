@@ -296,8 +296,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   }>({ urls: [], show: false });
   const [isProcessingYouTube, setIsProcessingYouTube] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const documentManagerRef = useRef<HTMLDivElement>(null);
-  const [documentManagerHeight, setDocumentManagerHeight] = useState(0);
 
   // Track if textarea is multi-line
   const isMultiLine = (inputValue && inputValue.includes('\n')) || (textareaRef.current && textareaRef.current.scrollHeight > textareaRef.current.clientHeight);
@@ -339,25 +337,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages, loading]);
-
-  // Measure document manager height when it's shown/hidden
-  useEffect(() => {
-    if (documentManagerRef.current && showDocumentManager) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          setDocumentManagerHeight(entry.contentRect.height);
-        }
-      });
-      
-      resizeObserver.observe(documentManagerRef.current);
-      
-      return () => {
-        resizeObserver.disconnect();
-      };
-    } else {
-      setDocumentManagerHeight(0);
-    }
-  }, [showDocumentManager]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -572,10 +551,11 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
     );
   }
 
-  // Chat conversation layout - current layout when messages exist
+  // Chat conversation layout - using flexbox instead of fixed positioning
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-      <header className="border-b bg-card p-4 shadow-sm">
+    <div className="flex flex-col h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="flex-shrink-0 border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
           <h1 className="text-xl font-semibold">RAG AI Chat</h1>
           <div className="flex items-center gap-2">
@@ -648,7 +628,7 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
 
       {/* Document Manager */}
       {showDocumentManager && (
-        <div ref={documentManagerRef} className="border-b bg-muted/20 p-4 max-h-96 overflow-y-auto">
+        <div className="flex-shrink-0 border-b bg-muted/20 p-4 max-h-96 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <DocumentManager
               apiKey={apiKey}
@@ -659,15 +639,8 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
         </div>
       )}
 
-      <div 
-        ref={scrollAreaRef} 
-        className="overflow-y-auto fixed bottom-24 left-0 right-0"
-        style={{
-          top: showDocumentManager 
-            ? `${80 + documentManagerHeight}px` // 80px for header
-            : '80px' // Just header height
-        }}
-      >
+      {/* Chat Messages Area - takes remaining space */}
+      <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
         <div className="max-w-4xl mx-auto p-4 space-y-6">
           {messages.map((msg, index) => (
             <MessageBubble key={index} message={msg} />
@@ -683,7 +656,8 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
         </div>
       </div>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
+      {/* Footer - Input Area */}
+      <footer className="flex-shrink-0 bg-card border-t p-4">
         <div className="max-w-4xl mx-auto space-y-4">
           {/* YouTube Detection Alert */}
           {youtubeDetection.show && (

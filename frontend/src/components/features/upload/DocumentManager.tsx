@@ -85,6 +85,15 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     onError: handleError
   });
 
+  // Auto-upload files when they're added
+  const handleFilesSelected = useCallback(async (files: File[]) => {
+    addFiles(files);
+    // Automatically start upload after files are added
+    setTimeout(() => {
+      uploadFiles();
+    }, 100); // Small delay to ensure files are added to state
+  }, [addFiles, uploadFiles]);
+
   const handleYouTubeSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -193,7 +202,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                   Document Upload
                 </CardTitle>
                 <CardDescription>
-                  Upload documents to chat with their content using AI
+                  Drag & drop or click to upload documents - they'll be processed automatically
                 </CardDescription>
               </div>
               
@@ -217,7 +226,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           <CardContent className="space-y-4">
             {/* File Upload Component */}
             <FileUpload
-              onFilesSelected={addFiles}
+              onFilesSelected={handleFilesSelected}
               onFileRemove={removeFile}
               uploadedFiles={uploadedFiles}
               multiple={uploadMode === 'multiple'}

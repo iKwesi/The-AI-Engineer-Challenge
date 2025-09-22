@@ -9,18 +9,22 @@ from openai import AsyncOpenAI, OpenAI
 class EmbeddingModel:
     """Helper for generating embeddings via the OpenAI API."""
 
-    def __init__(self, embeddings_model_name: str = "text-embedding-3-small"):
-        load_dotenv()
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(self, embeddings_model_name: str = "text-embedding-3-small", api_key: str = None):
+        # Prioritize passed api_key over environment variable
+        if api_key:
+            self.openai_api_key = api_key
+        else:
+            load_dotenv()
+            self.openai_api_key = os.getenv("OPENAI_API_KEY")
+            
         if self.openai_api_key is None:
             raise ValueError(
-                "OPENAI_API_KEY environment variable is not set. "
-                "Please configure it with your OpenAI API key."
+                "No API key provided. Either pass api_key parameter or set OPENAI_API_KEY environment variable."
             )
 
         self.embeddings_model_name = embeddings_model_name
-        self.async_client = AsyncOpenAI()
-        self.client = OpenAI()
+        self.async_client = AsyncOpenAI(api_key=self.openai_api_key)
+        self.client = OpenAI(api_key=self.openai_api_key)
 
     async def async_get_embeddings(self, list_of_text: Iterable[str]) -> List[List[float]]:
         """Return embeddings for ``list_of_text`` using the async client."""
