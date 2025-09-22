@@ -149,14 +149,14 @@ api/
   - [x] `POST /api/conversation-mode/resolve-conflict` - Handle multi-document conflicts
 
 ### Phase 4.6: Multiple File Upload Backend Enhancement (NEW REQUIREMENT)
-- [ ] **Enhanced API Endpoints**
-  - [ ] `POST /api/upload-documents` - Multiple file upload endpoint (batch processing)
-  - [ ] Update Pydantic models to support List[UploadFile] requests
-  - [ ] Add batch processing response models with per-file status
-  - [ ] Implement sequential file processing with error handling per file
-  - [ ] Auto-enter document mode after successful batch upload
-  - [ ] Add total file size validation (50MB combined limit for all files)
-  - [ ] Maintain backward compatibility with single file endpoint
+- [x] **Enhanced API Endpoints**
+  - [x] `POST /api/upload-documents` - Multiple file upload endpoint (batch processing)
+  - [x] Update Pydantic models to support List[UploadFile] requests
+  - [x] Add batch processing response models with per-file status
+  - [x] Implement sequential file processing with error handling per file
+  - [x] Auto-enter document mode after successful batch upload
+  - [x] Add total file size validation (50MB combined limit for all files)
+  - [x] Maintain backward compatibility with single file endpoint
 
 ### Phase 5: YouTube Integration
 - [x] **YouTube URL Detection**

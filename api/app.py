@@ -168,6 +168,22 @@ class DocumentUploadResponse(BaseModel):
     chunks_processed: int
     filename: str
 
+class BatchUploadFileResult(BaseModel):
+    filename: str
+    status: str
+    message: str
+    chunks_processed: int
+    file_size: int
+
+class BatchUploadResponse(BaseModel):
+    status: str
+    message: str
+    total_files: int
+    successful_files: int
+    failed_files: int
+    results: List[BatchUploadFileResult]
+    entered_document_mode: bool
+
 class YouTubeProcessResponse(BaseModel):
     status: str
     message: str
@@ -335,6 +351,146 @@ async def upload_document(
             raise HTTPException(status_code=400, detail={"status": "error", "message": str(e)})
         else:
             raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Multiple documents upload endpoint (batch processing)
+@app.post("/api/upload-documents", response_model=BatchUploadResponse)
+async def upload_documents(
+    files: List[UploadFile] = File(...),
+    api_key: str = Form(...)
+):
+    try:
+        # Validate that files were provided
+        if not files:
+            raise HTTPException(
+                status_code=400,
+                detail={"status": "error", "message": "No files provided"}
+            )
+        
+        # Check total combined file size
+        total_size = 0
+        file_sizes = {}
+        for file in files:
+            if file.size:
+                total_size += file.size
+                file_sizes[file.filename] = file.size
+        
+        if total_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail={
+                    "status": "error", 
+                    "message": f"Combined file size too large. Maximum total size is {MAX_FILE_SIZE // (1024*1024)}MB, got {total_size // (1024*1024)}MB"
+                }
+            )
+        
+        # Initialize results tracking
+        results = []
+        successful_files = 0
+        failed_files = 0
+        rag = get_rag_service(api_key)
+        
+        # Process each file sequentially
+        for file in files:
+            file_result = BatchUploadFileResult(
+                filename=file.filename,
+                status="pending",
+                message="",
+                chunks_processed=0,
+                file_size=file_sizes.get(file.filename, 0)
+            )
+            
+            try:
+                # Validate file type by extension
+                file_extension = Path(file.filename).suffix.lower()
+                processing_limits = ProcessingLimits()
+                
+                if not processing_limits.is_format_supported(file_extension):
+                    file_result.status = "failed"
+                    file_result.message = f"Unsupported file type: {file_extension}"
+                    failed_files += 1
+                    results.append(file_result)
+                    continue
+                
+                # Save uploaded file temporarily
+                with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
+                    content = await file.read()
+                    tmp_file.write(content)
+                    tmp_file_path = tmp_file.name
+                
+                try:
+                    # Process document with RAG service
+                    processed_doc = await rag.process_document(
+                        source=Path(tmp_file_path),
+                        document_id=file.filename,
+                        use_page_aware_chunking=True
+                    )
+                    
+                    file_result.status = "success"
+                    file_result.message = f"Document '{file.filename}' processed successfully"
+                    file_result.chunks_processed = len(processed_doc.chunks)
+                    successful_files += 1
+                
+                finally:
+                    # Clean up temporary file
+                    os.unlink(tmp_file_path)
+            
+            except Exception as e:
+                file_result.status = "failed"
+                file_result.message = str(e)
+                failed_files += 1
+            
+            results.append(file_result)
+        
+        # Auto-enter document mode if any files were successfully processed
+        entered_document_mode = False
+        if successful_files > 0:
+            try:
+                # Get all processed documents
+                if rag.processed_documents:
+                    # Convert processed documents to Document objects for conversation manager
+                    documents = [doc.original_document for doc in rag.processed_documents.values()]
+                    
+                    # Enter document mode
+                    session = rag.enter_document_mode(documents)
+                    
+                    # Update document chunks in session
+                    for doc_id in rag.processed_documents.keys():
+                        rag.update_document_chunks_in_session(doc_id)
+                    
+                    entered_document_mode = True
+            except Exception as e:
+                # Don't fail the entire batch if document mode entry fails
+                pass
+        
+        # Determine overall status
+        if successful_files == len(files):
+            overall_status = "success"
+            overall_message = f"All {successful_files} files processed successfully"
+        elif successful_files > 0:
+            overall_status = "partial_success"
+            overall_message = f"{successful_files} of {len(files)} files processed successfully"
+        else:
+            overall_status = "failed"
+            overall_message = "No files were processed successfully"
+        
+        if entered_document_mode and successful_files > 0:
+            overall_message += ". Entered document mode automatically."
+        
+        return BatchUploadResponse(
+            status=overall_status,
+            message=overall_message,
+            total_files=len(files),
+            successful_files=successful_files,
+            failed_files=failed_files,
+            results=results,
+            entered_document_mode=entered_document_mode
+        )
+    
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # YouTube processing endpoint
 @app.post("/api/process-youtube", response_model=YouTubeProcessResponse)
