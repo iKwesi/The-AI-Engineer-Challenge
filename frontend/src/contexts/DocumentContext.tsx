@@ -52,7 +52,20 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
         getConversationModeStatus(apiKey)
       ]);
 
-      setDocuments(docResponse.documents || []);
+      // Filter out invalid documents and ensure all required properties exist
+      const validDocuments = (docResponse.documents || []).filter((doc: any) => 
+        doc && 
+        typeof doc.id === 'string' && 
+        typeof doc.name === 'string' && 
+        typeof doc.type === 'string' &&
+        typeof doc.size === 'number' &&
+        typeof doc.chunks === 'number' &&
+        typeof doc.uploaded_at === 'string' &&
+        doc.id.trim() !== '' &&
+        doc.name.trim() !== ''
+      );
+      
+      setDocuments(validDocuments);
       setIsDocumentMode(modeResponse.mode === 'document');
 
       // If we're in document mode but have no documents, exit document mode

@@ -426,7 +426,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                                 {document.name}
                               </h5>
                               <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                                {document.type.toUpperCase()}
+                                {document.type?.toUpperCase() || 'UNKNOWN'}
                               </span>
                             </div>
                             
