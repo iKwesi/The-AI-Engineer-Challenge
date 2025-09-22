@@ -227,24 +227,29 @@ class ConflictDetectionResponse(BaseModel):
     has_conflict: bool
     conflict_info: Optional[Dict[str, Any]]
 
-# Global variables for RAG system
-rag_service: Optional[RAGService] = None
+# Global variables for RAG system - store per API key
+rag_services: Dict[str, RAGService] = {}
 
 # File size limit (50MB)
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
 def get_rag_service(api_key: str) -> RAGService:
-    """Get or create RAG service instance."""
-    global rag_service
-    if rag_service is None:
+    """Get or create RAG service instance for the given API key."""
+    global rag_services
+    
+    # Create a hash of the API key for storage (for security)
+    import hashlib
+    api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    
+    if api_key_hash not in rag_services:
         chunking_config = ChunkingConfig(chunk_size=1000, overlap=200)
         processing_limits = ProcessingLimits(max_file_size_mb=50)
-        rag_service = RAGService(
-            api_key=api_key,
+        rag_services[api_key_hash] = RAGService(
+            api_key=api_key,  # Use the actual API key passed from frontend
             chunking_config=chunking_config,
             processing_limits=processing_limits
         )
-    return rag_service
+    return rag_services[api_key_hash]
 
 # Define the main chat endpoint that handles POST requests
 @app.post("/api/chat")
@@ -568,36 +573,49 @@ async def get_rag_stats(api_key: str):
 @app.post("/api/conversation/enter-document-mode", response_model=ConversationModeResponse)
 async def enter_document_mode(request: ConversationModeRequest):
     try:
+        print(f"DEBUG: Entering document mode for API key: {request.api_key[:10]}...")
         rag = get_rag_service(request.api_key)
+        print(f"DEBUG: RAG service obtained, processed documents: {len(rag.processed_documents)}")
         
         # Get all processed documents
         if not rag.processed_documents:
+            print("DEBUG: No processed documents found")
             raise HTTPException(
                 status_code=400, 
                 detail={"status": "error", "message": "No documents available. Please upload documents first."}
             )
         
+        print(f"DEBUG: Converting {len(rag.processed_documents)} documents for conversation manager")
         # Convert processed documents to Document objects for conversation manager
         documents = [doc.original_document for doc in rag.processed_documents.values()]
+        print(f"DEBUG: Documents converted: {[doc.document_id for doc in documents]}")
         
         # Enter document mode
+        print("DEBUG: Calling enter_document_mode on RAG service")
         session = rag.enter_document_mode(documents)
+        print(f"DEBUG: Document mode entered, session: {session.session_id}, mode: {session.mode}")
         
         # Update document chunks in session
+        print("DEBUG: Updating document chunks in session")
         for doc_id in rag.processed_documents.keys():
             rag.update_document_chunks_in_session(doc_id)
+        print("DEBUG: Document chunks updated")
         
         return ConversationModeResponse(
             status="success",
             mode=session.mode.value,
             session_id=session.session_id,
-            documents=session.documents,
+            documents=list(session.documents.values()) if hasattr(session, 'documents') else [],
             message="Entered document mode. Your queries will now be answered using your uploaded documents."
         )
     
-    except HTTPException:
+    except HTTPException as e:
+        print(f"DEBUG: HTTPException in enter_document_mode: {e}")
         raise
     except Exception as e:
+        print(f"DEBUG: Exception in enter_document_mode: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Exit document mode
@@ -633,17 +651,23 @@ async def get_conversation_status(api_key: str):
 @app.post("/api/conversation/chat", response_model=FallbackResponse)
 async def conversation_chat(request: RAGChatRequest):
     try:
+        print(f"DEBUG: Conversation chat request for API key: {request.api_key[:10]}...")
         rag = get_rag_service(request.api_key)
+        print(f"DEBUG: RAG service obtained")
         
         # Check if we're in document mode
+        print("DEBUG: Getting conversation status")
         conversation_status = rag.get_conversation_status()
+        print(f"DEBUG: Conversation status: {conversation_status}")
         
         if conversation_status['mode'] == 'document' and conversation_status['session_active']:
+            print("DEBUG: In document mode, using RAG with fallback detection")
             # Use conversation mode with fallback detection
             result = await rag.query_with_fallback(
                 query=request.user_message,
                 max_context_chunks=5
             )
+            print(f"DEBUG: RAG query result: needs_fallback={result.get('needs_fallback')}")
             
             return FallbackResponse(
                 needs_fallback=result['needs_fallback'],
@@ -653,6 +677,7 @@ async def conversation_chat(request: RAGChatRequest):
                 confidence_score=result.get('confidence_score', 0.0)
             )
         else:
+            print("DEBUG: Not in document mode, using regular chat")
             # Regular chat mode
             client = OpenAI(api_key=request.api_key)
             response = client.chat.completions.create(
@@ -672,6 +697,9 @@ async def conversation_chat(request: RAGChatRequest):
             )
     
     except Exception as e:
+        print(f"DEBUG: Exception in conversation_chat: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 # Handle fallback confirmation
