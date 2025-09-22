@@ -155,7 +155,7 @@ api/
   - [ ] Add batch processing response models with per-file status
   - [ ] Implement sequential file processing with error handling per file
   - [ ] Auto-enter document mode after successful batch upload
-  - [ ] Add file validation and size checking for each file in batch
+  - [ ] Add total file size validation (50MB combined limit for all files)
   - [ ] Maintain backward compatibility with single file endpoint
 
 ### Phase 5: YouTube Integration
@@ -290,7 +290,9 @@ api/
 ## Technical Specifications
 
 ### File Processing Limits
-- **Maximum file size**: 50MB per file
+- **Single file upload**: Maximum 50MB per file
+- **Multiple file upload**: Maximum 50MB combined total for all files
+- **Individual files in batch**: No individual limit (constrained by total)
 - **Supported formats**: PDF, TXT, DOCX, DOC, XLSX, XLS, CSV
 - **YouTube**: Any public video with available transcripts
 
