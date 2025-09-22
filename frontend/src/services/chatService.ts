@@ -7,6 +7,8 @@ export interface ChatRequest {
   userMessage: string;
   model: string;
   apiKey: string;
+  forceGeneralMode?: boolean;
+  forceDocumentMode?: boolean;
 }
 
 export interface RAGChatRequest {
@@ -380,6 +382,20 @@ export const confirmFallback = async (
  */
 export const sendSmartChatRequest = async (data: ChatRequest): Promise<RAGChatResponse> => {
   try {
+    // Handle user overrides first
+    if (data.forceGeneralMode) {
+      console.log('User requested general knowledge mode, using regular chat');
+      const response = await sendChatRequest(data);
+      return {
+        success: response.success,
+        response: response.data,
+        usedContext: false,
+        needsFallback: false,
+        citations: [],
+        error: response.error
+      };
+    }
+
     // First check conversation status
     const status = await getConversationStatus(data.apiKey);
     
@@ -389,6 +405,19 @@ export const sendSmartChatRequest = async (data: ChatRequest): Promise<RAGChatRe
     const isSessionActive = status.session_active;
     
     console.log('Smart chat status check:', { hasDocuments, isDocumentMode, isSessionActive, documentsCount: status.documents?.length });
+
+    // Handle force document mode override
+    if (data.forceDocumentMode && !hasDocuments) {
+      console.log('User requested document mode but no documents available');
+      return {
+        success: false,
+        error: "Document mode requested but no documents are available. Please upload documents first.",
+        response: "",
+        usedContext: false,
+        needsFallback: false,
+        citations: []
+      };
+    }
     
     // CRITICAL FIX: If we're in document mode but have no documents, exit document mode
     if (isDocumentMode && !hasDocuments) {

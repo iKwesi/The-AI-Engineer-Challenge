@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getDocumentList, exitDocumentMode, getConversationModeStatus } from '@/services/documentService';
+import { getDocumentList, exitDocumentMode, getConversationModeStatus, enterDocumentMode } from '@/services/documentService';
 
 export interface Document {
   id: string;
@@ -71,30 +71,42 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
         rawDocuments: docResponse.documents?.length || 0
       });
 
-      // CRITICAL FIX: If no valid documents exist, force exit document mode
-      if (validDocuments.length === 0) {
-        console.log('No valid documents found, forcing exit from document mode');
-        setDocuments([]);
-        setIsDocumentMode(false);
-        
-        // If backend thinks we're in document mode, exit it
-        if (modeResponse.mode === 'document') {
-          console.log('Backend is in document mode but no documents exist, exiting...');
-          try {
-            await exitDocumentMode(apiKey);
-            console.log('Successfully exited document mode');
-          } catch (exitError) {
-            console.warn('Failed to exit document mode:', exitError);
-          }
+      // Update documents state first
+      setDocuments(validDocuments);
+
+      // Simple mode logic: if we have documents, we're in document mode
+      // If no documents, we're in general mode
+      const shouldBeInDocumentMode = validDocuments.length > 0;
+      const currentBackendMode = modeResponse.mode === 'document';
+
+      if (shouldBeInDocumentMode && !currentBackendMode) {
+        // We have documents but backend is in general mode - enter document mode
+        console.log('Documents found, entering document mode');
+        try {
+          await enterDocumentMode(apiKey);
+          setIsDocumentMode(true);
+          console.log('Successfully entered document mode');
+        } catch (error) {
+          console.warn('Failed to enter document mode:', error);
+          // Still set frontend to document mode since we have documents
+          setIsDocumentMode(true);
+        }
+      } else if (!shouldBeInDocumentMode && currentBackendMode) {
+        // No documents but backend is in document mode - exit document mode
+        console.log('No documents found, exiting document mode');
+        try {
+          await exitDocumentMode(apiKey);
+          setIsDocumentMode(false);
+          console.log('Successfully exited document mode');
+        } catch (error) {
+          console.warn('Failed to exit document mode:', error);
+          // Still set frontend to general mode since we have no documents
+          setIsDocumentMode(false);
         }
       } else {
-        // We have valid documents, update state accordingly
-        setDocuments(validDocuments);
-        setIsDocumentMode(modeResponse.mode === 'document');
-        
-        // If we have documents but not in document mode, we might want to enter it
-        // But let's be conservative and only set the state based on backend response
-        console.log(`Found ${validDocuments.length} valid documents, mode: ${modeResponse.mode}`);
+        // Backend and frontend are in sync
+        setIsDocumentMode(shouldBeInDocumentMode);
+        console.log(`Mode synchronized: ${shouldBeInDocumentMode ? 'document' : 'general'} mode`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh documents';
@@ -114,51 +126,9 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
   }, []);
 
   const handleDocumentRemoved = useCallback(async () => {
-    // Refresh documents to get current state
+    // Simply refresh documents - the refresh logic will handle mode switching
     await refreshDocuments();
-    
-    // Check if we need to exit document mode after refresh
-    // Use a small delay to ensure the refresh has completed
-    setTimeout(async () => {
-      try {
-        // Get fresh document list and conversation status
-        const [docResponse, modeResponse] = await Promise.all([
-          getDocumentList(apiKey),
-          getConversationModeStatus(apiKey)
-        ]);
-
-        const validDocuments = (docResponse.documents || []).filter((doc: any) => 
-          doc && 
-          typeof doc.id === 'string' && 
-          typeof doc.name === 'string' && 
-          typeof doc.type === 'string' &&
-          typeof doc.size === 'number' &&
-          typeof doc.chunks === 'number' &&
-          typeof doc.uploaded_at === 'string' &&
-          doc.id.trim() !== '' &&
-          doc.name.trim() !== ''
-        );
-
-        // If no valid documents remain but we're still in document mode, exit it
-        if (validDocuments.length === 0 && modeResponse.mode === 'document' && apiKey?.trim()) {
-          console.log('No documents remaining, exiting document mode');
-          await exitDocumentMode(apiKey);
-          setIsDocumentMode(false);
-          setDocuments([]);
-          console.log('Successfully exited document mode after document removal');
-        } else {
-          // Update state with current documents
-          setDocuments(validDocuments);
-          setIsDocumentMode(modeResponse.mode === 'document');
-        }
-      } catch (error) {
-        console.warn('Failed to handle document removal properly:', error);
-        // On error, assume no documents and general mode
-        setDocuments([]);
-        setIsDocumentMode(false);
-      }
-    }, 100);
-  }, [apiKey]);
+  }, [refreshDocuments]);
 
   // Initial load and refresh when apiKey changes
   useEffect(() => {

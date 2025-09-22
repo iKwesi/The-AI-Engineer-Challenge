@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { 
   processStreamingChat, 
   sendSmartChatRequest, 
@@ -34,14 +34,19 @@ export function useChat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
-  const [apiKey, setApiKey] = useState(() => {
-    // Initialize API key from localStorage if available
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('rag-chat-api-key') || '';
-    }
-    return '';
-  });
+  const [apiKey, setApiKey] = useState('');
   const [pendingFallback, setPendingFallback] = useState<FallbackRequest | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Handle hydration and localStorage loading
+  useEffect(() => {
+    setIsHydrated(true);
+    // Load API key from localStorage after hydration
+    const storedApiKey = localStorage.getItem('rag-chat-api-key') || '';
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
 
   // Persist API key to localStorage when it changes
   const handleSetApiKey = useCallback((key: string) => {
@@ -58,6 +63,18 @@ export function useChat() {
   const sendChat = async (userMessage: string) => {
     if (!userMessage.trim()) return;
 
+    // Check for user override commands
+    const lowerMessage = userMessage.toLowerCase().trim();
+    const isGeneralKnowledgeRequest = lowerMessage.includes('general knowledge') || 
+                                     lowerMessage.includes('use general') ||
+                                     lowerMessage.includes('ignore documents') ||
+                                     lowerMessage.includes('without documents');
+    
+    const isDocumentOnlyRequest = lowerMessage.includes('document only') || 
+                                 lowerMessage.includes('from documents') ||
+                                 lowerMessage.includes('use documents') ||
+                                 lowerMessage.includes('document mode');
+
     // Add user message to messages
     const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
@@ -66,11 +83,13 @@ export function useChat() {
     setError(null);
     setPendingFallback(null);
 
-    // Prepare chat request
+    // Prepare chat request with override flags
     const chatRequest: ChatRequest = {
       userMessage: userMessage,
       model: "gpt-4.1-mini",
-      apiKey: apiKey
+      apiKey: apiKey,
+      forceGeneralMode: isGeneralKnowledgeRequest,
+      forceDocumentMode: isDocumentOnlyRequest
     };
 
     try {
@@ -97,10 +116,13 @@ export function useChat() {
           confidenceScore: response.fallbackRequest.confidence_score
         }]);
       } else {
-        // Add successful response
+        // Add successful response with mode indicator
+        const modeIndicator = response.usedContext ? '📄 Document Mode' : '🌐 General Mode';
+        const responseContent = `${response.response || "No response received"}`;
+        
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: response.response || "No response received",
+          content: responseContent,
           citations: response.citations,
           usedContext: response.usedContext,
           confidenceScore: response.confidenceScore

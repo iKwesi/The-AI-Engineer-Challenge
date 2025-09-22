@@ -7,66 +7,52 @@ import RAGChatInterface from '@/components/features/chat/RAGChatInterface';
 import { useChat } from '@/hooks/useChat';
 import { DocumentProvider, useDocumentContext } from '@/contexts/DocumentContext';
 
-function ChatInterfaceSelector() {
-  const {
-    messages,
-    loading,
-    error,
-    inputValue,
-    setInputValue,
-    handleSubmit,
-    apiKey,
-    setApiKey,
-    pendingFallback,
-    handleFallbackConfirmation,
-  } = useChat();
-
+function ChatInterfaceSelector({ 
+  apiKey, 
+  setApiKey, 
+  messages, 
+  loading, 
+  error, 
+  inputValue, 
+  setInputValue, 
+  handleSubmit, 
+  pendingFallback, 
+  handleFallbackConfirmation 
+}: { 
+  apiKey: string; 
+  setApiKey: (key: string) => void;
+  messages: any[];
+  loading: boolean;
+  error: string | null;
+  inputValue: string;
+  setInputValue: (value: string) => void;
+  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  pendingFallback: any;
+  handleFallbackConfirmation: any;
+}) {
   const { documents, isDocumentMode, refreshDocuments } = useDocumentContext();
 
-  // Determine which interface to show based on document availability
+  // Simple logic: if we have documents and are in document mode, show RAG interface
+  // Otherwise, show simple chat interface
   const hasDocuments = documents.length > 0;
-  
-  // CRITICAL FIX: Only show RAG interface if we actually have documents
-  // If no documents exist, always show SimpleChatInterface regardless of backend mode
   const shouldShowRAGInterface = hasDocuments && isDocumentMode;
 
   console.log('Chat interface selection:', { 
     hasDocuments, 
     isDocumentMode, 
     shouldShowRAGInterface,
-    documentsCount: documents.length,
-    documentIds: documents.map(d => d.id)
+    documentsCount: documents.length
   });
 
-  // Force refresh documents when apiKey changes to ensure we have current state
+  // Refresh documents when apiKey changes
   React.useEffect(() => {
     if (apiKey?.trim()) {
       refreshDocuments();
     }
   }, [apiKey, refreshDocuments]);
 
-  // DEFENSIVE: If no documents exist, always show SimpleChatInterface
-  if (!hasDocuments) {
-    console.log('No documents found, forcing SimpleChatInterface');
-    return (
-      <SimpleChatInterface
-        messages={messages}
-        loading={loading}
-        error={error}
-        inputValue={inputValue}
-        setInputValue={setInputValue}
-        handleSubmit={handleSubmit}
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        pendingFallback={pendingFallback}
-        handleFallbackConfirmation={handleFallbackConfirmation}
-      />
-    );
-  }
-
-  // Only show RAG interface if we have documents AND are in document mode
   if (shouldShowRAGInterface) {
-    console.log('Documents found and in document mode, showing RAGChatInterface');
+    console.log('Showing RAG interface - documents available and in document mode');
     return (
       <RAGChatInterface
         messages={messages}
@@ -83,8 +69,7 @@ function ChatInterfaceSelector() {
     );
   }
 
-  // Fallback to SimpleChatInterface
-  console.log('Fallback to SimpleChatInterface');
+  console.log('Showing simple chat interface - no documents or in general mode');
   return (
     <SimpleChatInterface
       messages={messages}
@@ -103,8 +88,16 @@ function ChatInterfaceSelector() {
 
 export default function Home() {
   const {
+    messages,
+    loading,
+    error,
+    inputValue,
+    setInputValue,
+    handleSubmit,
     apiKey,
     setApiKey,
+    pendingFallback,
+    handleFallbackConfirmation,
   } = useChat();
 
   // Handle document mode entered
@@ -126,7 +119,18 @@ export default function Home() {
           onDocumentModeEntered={handleDocumentModeEntered}
           onError={handleUploadError}
         >
-          <ChatInterfaceSelector />
+          <ChatInterfaceSelector 
+            apiKey={apiKey} 
+            setApiKey={setApiKey}
+            messages={messages}
+            loading={loading}
+            error={error}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            handleSubmit={handleSubmit}
+            pendingFallback={pendingFallback}
+            handleFallbackConfirmation={handleFallbackConfirmation}
+          />
         </SidebarLayout>
       </DocumentProvider>
     </main>
