@@ -207,6 +207,9 @@ export function useDocumentUpload({
     return stats.pending > 0 && !isUploading && apiKey?.trim();
   }, [getUploadStats, isUploading, apiKey]);
 
+  // Compute canUpload value
+  const canUploadValue = canUpload();
+
   return {
     // State
     uploadedFiles,
@@ -222,7 +225,7 @@ export function useDocumentUpload({
     
     // Computed
     getUploadStats,
-    canUpload: canUpload(),
+    canUpload: canUploadValue,
     
     // Utilities
     updateFileStatus
