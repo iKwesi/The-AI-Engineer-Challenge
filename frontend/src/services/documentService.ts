@@ -64,7 +64,27 @@ export interface ConversationModeStatus {
  * Configuration for the document service
  */
 const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || "";
+  // If environment variable is set, use it (for production/custom deployments)
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  
+  // Auto-detect based on environment
+  if (typeof window !== 'undefined') {
+    // Client-side: use current origin for production, localhost for development
+    const { protocol, hostname } = window.location;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Development: backend runs on port 8000
+      return 'http://localhost:8000';
+    } else {
+      // Production: assume API is on same domain (Vercel deployment)
+      return `${protocol}//${hostname}`;
+    }
+  }
+  
+  // Server-side fallback (during SSR)
+  return '';
 };
 
 /**
