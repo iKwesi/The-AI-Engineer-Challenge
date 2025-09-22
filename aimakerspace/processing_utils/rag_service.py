@@ -399,7 +399,7 @@ class RAGService:
                 system_prompt = system_prompt.replace("{context}", context)
             
             # Generate response (synchronous call)
-            response = self.chat_model.agenerate_response(
+            response = self.chat_model.run(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -410,7 +410,7 @@ class RAGService:
             
         except Exception as e:
             # Fallback to response without context (synchronous call)
-            return self.chat_model.agenerate_response(
+            return self.chat_model.run(
                 messages=[{"role": "user", "content": user_message}]
             )
     
@@ -424,18 +424,21 @@ class RAGService:
         Returns:
             System prompt with embedded context
         """
-        return f"""You are a helpful AI assistant. Use the following context to answer the user's question. 
-If the context doesn't contain relevant information, say so and provide a general response.
+        return f"""You are a helpful AI assistant. Use only the provided context to answer the user's question.  
+            If the context does not contain relevant information, say:  
+            "I couldn’t find information in the provided sources."  
 
-Context:
-{context}
+            Context:
+            {context}
 
-Instructions:
-- Answer based on the provided context when relevant
-- Cite sources when possible (e.g., "According to the document...")
-- If context is insufficient, acknowledge this and provide general guidance
-- Be concise and accurate
-"""
+            Instructions:
+            - Base answers strictly on the context above  
+            - Always cite the specific source(s) you used, including page numbers if they are available in the context  
+            - Format: [Title, p. X] or [Title, pp. X–Y]  
+            - If page numbers are not available in the context, cite the source without them  
+            - Never invent or guess page numbers or citations  
+            - Be concise and accurate
+        """
     
     def get_document_info(self, document_id: str) -> Optional[Dict[str, Any]]:
         """
