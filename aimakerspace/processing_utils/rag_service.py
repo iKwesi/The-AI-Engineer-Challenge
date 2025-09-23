@@ -583,7 +583,7 @@ class RAGService:
         context_aware_threshold: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Query with intelligent fallback detection.
+        Query with adaptive confidence thresholds and intelligent fallback detection.
         
         Args:
             query: User's query
@@ -591,18 +591,36 @@ class RAGService:
             context_aware_threshold: Optional custom threshold
             
         Returns:
-            Dictionary with response, fallback info, and citations
+            Dictionary with response, response_type, fallback info, and citations
         """
         # Perform search
         search_result = await self.search(query, k=max_context_chunks)
         
-        # Check for fallback need
-        needs_fallback, fallback_request = self.conversation_manager.query_with_fallback(
+        # Check response type with adaptive thresholds
+        response_type, fallback_request = self.conversation_manager.query_with_fallback(
             query, search_result, context_aware_threshold
         )
         
-        if needs_fallback and fallback_request:
+        # Build citations for all response types
+        citations = []
+        for chunk in search_result.chunks:
+            doc_info = self.get_document_info(chunk.source_document_id)
+            citations.append({
+                'chunk_id': chunk.chunk_id,
+                'document_name': doc_info['filename'] if doc_info else 'Unknown',
+                'document_id': chunk.source_document_id,
+                'content_preview': chunk.content[:200] + '...' if len(chunk.content) > 200 else chunk.content
+            })
+        
+        confidence_score = (
+            self.conversation_manager.current_session.conversation_context.get('last_confidence_score', 0.0) 
+            if self.conversation_manager.current_session else 0.0
+        )
+        
+        if response_type == "fallback":
+            # Full fallback - no document-based response
             return {
+                'response_type': 'fallback',
                 'needs_fallback': True,
                 'fallback_request': {
                     'query': fallback_request.query,
@@ -618,32 +636,43 @@ class RAGService:
                         'metadata': chunk.metadata
                     }
                     for chunk in fallback_request.retrieved_chunks
-                ]
+                ],
+                'confidence_score': confidence_score
             }
         
-        # Generate response with context
+        # Generate response with context (for both normal and disclaimer)
         response = await self.chat_with_context(
             query, 
             max_context_chunks=max_context_chunks
         )
         
-        # Build citations
-        citations = []
-        for chunk in search_result.chunks:
-            doc_info = self.get_document_info(chunk.source_document_id)
-            citations.append({
-                'chunk_id': chunk.chunk_id,
-                'document_name': doc_info['filename'] if doc_info else 'Unknown',
-                'document_id': chunk.source_document_id,
-                'content_preview': chunk.content[:200] + '...' if len(chunk.content) > 200 else chunk.content
-            })
-        
-        return {
-            'needs_fallback': False,
-            'response': response,
-            'citations': citations,
-            'confidence_score': self.conversation_manager.current_session.conversation_context.get('last_confidence_score', 0.0) if self.conversation_manager.current_session else 0.0
-        }
+        if response_type == "disclaimer":
+            # Medium confidence - response with disclaimer
+            disclaimer_text = fallback_request.explanation if fallback_request else "This response has moderate confidence and may not fully address your question."
+            
+            return {
+                'response_type': 'disclaimer',
+                'needs_fallback': False,
+                'response': response,
+                'disclaimer': disclaimer_text,
+                'citations': citations,
+                'confidence_score': confidence_score,
+                'fallback_request': {
+                    'query': fallback_request.query,
+                    'confidence_score': fallback_request.confidence_score,
+                    'explanation': fallback_request.explanation,
+                    'timestamp': fallback_request.timestamp
+                } if fallback_request else None
+            }
+        else:
+            # High confidence - normal response
+            return {
+                'response_type': 'normal',
+                'needs_fallback': False,
+                'response': response,
+                'citations': citations,
+                'confidence_score': confidence_score
+            }
     
     async def detect_multi_document_conflicts(
         self,

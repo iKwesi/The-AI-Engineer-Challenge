@@ -98,7 +98,8 @@ class ConversationModeManager:
     
     def __init__(
         self,
-        confidence_threshold: float = 0.7,
+        confidence_threshold: float = 0.45,  # Lowered from 0.7 to 0.45
+        fallback_threshold: float = 0.3,     # New fallback threshold
         session_duration_hours: int = 24,
         max_documents_per_session: int = 10,
         smoothing_factor: float = 0.3
@@ -107,12 +108,14 @@ class ConversationModeManager:
         Initialize the conversation mode manager.
         
         Args:
-            confidence_threshold: Default confidence threshold for fallback
+            confidence_threshold: Primary confidence threshold for normal responses
+            fallback_threshold: Lower threshold for responses with disclaimer
             session_duration_hours: Session expiration time in hours
             max_documents_per_session: Maximum documents per session
             smoothing_factor: Factor for confidence score smoothing
         """
         self.confidence_threshold = confidence_threshold
+        self.fallback_threshold = fallback_threshold
         self.session_duration_hours = session_duration_hours
         self.max_documents_per_session = max_documents_per_session
         self.smoothing_factor = smoothing_factor
@@ -254,9 +257,9 @@ class ConversationModeManager:
         query: str,
         search_result: SearchResult,
         context_aware_threshold: Optional[float] = None
-    ) -> Tuple[bool, Optional[FallbackRequest]]:
+    ) -> Tuple[str, Optional[FallbackRequest]]:
         """
-        Analyze search results and determine if fallback is needed.
+        Analyze search results and determine response type with adaptive thresholds.
         
         Args:
             query: User's query
@@ -264,10 +267,11 @@ class ConversationModeManager:
             context_aware_threshold: Optional custom threshold for this query
             
         Returns:
-            Tuple of (needs_fallback, fallback_request)
+            Tuple of (response_type, fallback_request)
+            response_type: "normal", "disclaimer", or "fallback"
         """
         if not self.current_session or self.current_session.mode != ConversationMode.DOCUMENT:
-            return False, None
+            return "normal", None
         
         # Calculate confidence score
         confidence_score = self._calculate_confidence_score(search_result)
@@ -275,22 +279,25 @@ class ConversationModeManager:
         # Apply smoothing
         smoothed_confidence = self._apply_confidence_smoothing(confidence_score)
         
-        # Determine threshold (context-aware or default)
-        threshold = context_aware_threshold or self._get_context_aware_threshold(query)
+        # Determine thresholds (context-aware or default)
+        primary_threshold = context_aware_threshold or self._get_context_aware_threshold(query)
+        fallback_threshold = self.fallback_threshold
         
         # Update session context
         self.current_session.conversation_context['last_document_query'] = query
         self.current_session.conversation_context['last_confidence_score'] = smoothed_confidence
         
-        # Check if fallback is needed
-        needs_fallback = smoothed_confidence < threshold
-        
-        if needs_fallback:
+        # Adaptive threshold logic
+        if smoothed_confidence >= primary_threshold:
+            # High confidence - normal response
+            return "normal", None
+        elif smoothed_confidence >= fallback_threshold:
+            # Medium confidence - response with disclaimer
             fallback_request = FallbackRequest(
                 query=query,
                 confidence_score=smoothed_confidence,
                 retrieved_chunks=search_result.chunks,
-                explanation=self._generate_fallback_explanation(smoothed_confidence, threshold),
+                explanation=self._generate_disclaimer_explanation(smoothed_confidence, primary_threshold),
                 timestamp=datetime.now().isoformat()
             )
             
@@ -298,15 +305,36 @@ class ConversationModeManager:
             self.current_session.conversation_context['fallback_history'].append({
                 'query': query,
                 'confidence': smoothed_confidence,
+                'response_type': 'disclaimer',
                 'timestamp': fallback_request.timestamp
             })
             
             self.stats['fallback_requests'] += 1
             self.stats['last_activity'] = datetime.now().isoformat()
             
-            return True, fallback_request
-        
-        return False, None
+            return "disclaimer", fallback_request
+        else:
+            # Low confidence - full fallback
+            fallback_request = FallbackRequest(
+                query=query,
+                confidence_score=smoothed_confidence,
+                retrieved_chunks=search_result.chunks,
+                explanation=self._generate_fallback_explanation(smoothed_confidence, fallback_threshold),
+                timestamp=datetime.now().isoformat()
+            )
+            
+            # Add to fallback history
+            self.current_session.conversation_context['fallback_history'].append({
+                'query': query,
+                'confidence': smoothed_confidence,
+                'response_type': 'fallback',
+                'timestamp': fallback_request.timestamp
+            })
+            
+            self.stats['fallback_requests'] += 1
+            self.stats['last_activity'] = datetime.now().isoformat()
+            
+            return "fallback", fallback_request
     
     def detect_multi_document_conflicts(
         self,
@@ -550,25 +578,38 @@ class ConversationModeManager:
         # Ensure threshold stays within reasonable bounds
         return max(0.3, min(0.9, base_threshold))
     
-    def _generate_fallback_explanation(self, confidence_score: float, threshold: float) -> str:
+    def _generate_disclaimer_explanation(self, confidence_score: float, threshold: float) -> str:
         """
-        Generate explanation for why fallback is needed.
+        Generate explanation for disclaimer responses (medium confidence).
         
         Args:
             confidence_score: Calculated confidence score
-            threshold: Threshold that wasn't met
+            threshold: Primary threshold that wasn't met
+            
+        Returns:
+            Human-readable disclaimer
+        """
+        return (f"Based on the available information in your documents, here's what I found. "
+                f"Please note that this response has moderate confidence (score: {confidence_score:.2f}) "
+                f"and may not fully address your question.")
+    
+    def _generate_fallback_explanation(self, confidence_score: float, threshold: float) -> str:
+        """
+        Generate explanation for why full fallback is needed.
+        
+        Args:
+            confidence_score: Calculated confidence score
+            threshold: Fallback threshold that wasn't met
             
         Returns:
             Human-readable explanation
         """
-        if confidence_score < 0.3:
+        if confidence_score < 0.2:
             return "I couldn't find relevant information in your uploaded documents for this question."
-        elif confidence_score < 0.5:
-            return "The information in your documents doesn't seem to directly address this question."
         elif confidence_score < threshold:
-            return "I found some related content in your documents, but it may not fully answer your question."
+            return "The information in your documents doesn't seem to directly address this question."
         else:
-            return "The confidence score was below the threshold for this type of query."
+            return "I found some related content in your documents, but it may not fully answer your question."
     
     def _generate_conflict_explanation(self, confidence_scores: Dict[str, float]) -> str:
         """
