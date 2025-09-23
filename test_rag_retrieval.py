@@ -7,6 +7,7 @@ This script directly tests the RAG implementation to identify why
 even when the document contains that information.
 """
 
+import os
 import asyncio
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ sys.path.append(str(Path(__file__).parent))
 from aimakerspace.processing_utils.rag_service import RAGService
 from aimakerspace.models import ChunkingConfig, ProcessingLimits
 
+api_key = os.getenv('OPENAI_API_KEY')
 
 class RAGDebugger:
     """Debug RAG retrieval issues with detailed logging."""
@@ -259,15 +261,22 @@ async def main():
     print("🔍 RAG Retrieval Debug Test")
     print("=" * 50)
     
-    # Configuration
-    API_KEY = "test-api-key-for-debugging"  # Replace with actual API key if needed
+    # Configuration - Get API key from environment
+    import os
+    API_KEY = os.getenv('OPENAI_API_KEY')
+    if not API_KEY:
+        print("❌ Please set OPENAI_API_KEY environment variable")
+        print("Example: export OPENAI_API_KEY='your-api-key-here'")
+        return
+    
     TEST_DOCUMENT = Path("docs/test-docs/quantumML.pdf")
     TEST_QUERIES = [
         "quantum machine learning",
         "tell me about quantum machine learning",
         "what is quantum ML",
         "quantum computing and machine learning",
-        "quantum algorithms"
+        "quantum algorithms",
+        "what is qubits"
     ]
     
     # Check if test document exists
