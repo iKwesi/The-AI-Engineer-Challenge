@@ -16,7 +16,7 @@ import rehypeKatex from 'rehype-katex';
 import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
 
 // Helper function to detect if citations are from YouTube content
-const isYouTubeContent = (citations: any[]): boolean => {
+const isYouTubeContent = (citations: Array<{ chunk_id: string; document_name: string; document_id: string; content_preview: string }>): boolean => {
   return citations.some(citation => 
     citation.content_preview?.includes('=== YouTube Video:') ||
     citation.content_preview?.includes('=== Transcript ===') ||

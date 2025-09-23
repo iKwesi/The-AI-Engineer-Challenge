@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { FileText, Trash2, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { FileText, Trash2, AlertCircle, Loader } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -20,7 +20,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onError,
   className
 }) => {
-  const { documents, isLoading, error, refreshDocuments, handleDocumentRemoved } = useDocumentContext();
+  const { documents, isLoading, error, handleDocumentRemoved } = useDocumentContext();
   const [removingDocuments, setRemovingDocuments] = useState<Set<string>>(new Set());
   const [removeError, setRemoveError] = useState<string | null>(null);
 
