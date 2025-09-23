@@ -159,7 +159,7 @@ class RAGChatRequest(BaseModel):
     use_context: bool = True  # Whether to use RAG context
 
 class YouTubeRequest(BaseModel):
-    youtube_url: str       # YouTube URL to process
+    url: str              # YouTube URL to process
     api_key: str          # OpenAI API key for authentication
 
 class DocumentUploadResponse(BaseModel):
@@ -189,6 +189,7 @@ class YouTubeProcessResponse(BaseModel):
     message: str
     video_title: str
     chunks_processed: int
+    entered_document_mode: bool = False
 
 class ErrorResponse(BaseModel):
     status: str
@@ -507,7 +508,7 @@ async def process_youtube(request: YouTubeRequest):
         
         # Process YouTube URL
         processed_doc = await rag.process_document(
-            source=request.youtube_url,
+            source=request.url,
             use_page_aware_chunking=False  # YouTube transcripts don't need page-aware chunking
         )
         
@@ -515,16 +516,37 @@ async def process_youtube(request: YouTubeRequest):
         video_title = processed_doc.original_document.metadata.get('video_title', 
                      processed_doc.original_document.metadata.get('title', 'Unknown Video'))
         
+        # Auto-enter document mode if processing was successful
+        entered_document_mode = False
+        try:
+            # Get all processed documents
+            if rag.processed_documents:
+                # Convert processed documents to Document objects for conversation manager
+                documents = [doc.original_document for doc in rag.processed_documents.values()]
+                
+                # Enter document mode
+                session = rag.enter_document_mode(documents)
+                
+                # Update document chunks in session
+                for doc_id in rag.processed_documents.keys():
+                    rag.update_document_chunks_in_session(doc_id)
+                
+                entered_document_mode = True
+        except Exception as e:
+            # Don't fail the entire process if document mode entry fails
+            print(f"Warning: Failed to enter document mode after YouTube processing: {e}")
+        
         return YouTubeProcessResponse(
             status="success",
             message=f"YouTube video processed successfully",
             video_title=video_title,
-            chunks_processed=len(processed_doc.chunks)
+            chunks_processed=len(processed_doc.chunks),
+            entered_document_mode=entered_document_mode
         )
     
     except Exception as e:
         # Return 400 for validation/processing errors, 500 for unexpected errors
-        if "Invalid YouTube URL" in str(e) or "Invalid" in str(e):
+        if "Invalid YouTube URL" in str(e) or "Invalid" in str(e) or "No transcript available" in str(e):
             raise HTTPException(status_code=400, detail={"status": "error", "message": str(e)})
         else:
             raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
