@@ -389,17 +389,29 @@ class RAGService:
             # Retrieve relevant context
             search_result = await self.search(query, k=max_context_chunks)
             
+            # Check if this is YouTube content (no citations needed)
+            is_youtube_content = any(
+                chunk.metadata.get('document_type') == 'youtube' or 
+                chunk.metadata.get('content_type') == 'youtube_transcript'
+                for chunk in search_result.chunks
+            )
+            
             # Build context string
             context_parts = []
             for i, chunk in enumerate(search_result.chunks):
-                citation = chunk.get_citation_text() if hasattr(chunk, 'get_citation_text') else f"Document {i+1}"
-                context_parts.append(f"[{citation}]\n{chunk.content}")
+                if is_youtube_content:
+                    # For YouTube content, just include the content without citations
+                    context_parts.append(chunk.content)
+                else:
+                    # For other content, include citations
+                    citation = chunk.get_citation_text() if hasattr(chunk, 'get_citation_text') else f"Document {i+1}"
+                    context_parts.append(f"[{citation}]\n{chunk.content}")
             
             context = "\n\n".join(context_parts)
             
             # Build system prompt
             if system_prompt is None:
-                system_prompt = self._build_default_system_prompt(context)
+                system_prompt = self._build_default_system_prompt(context, is_youtube_content)
             else:
                 system_prompt = system_prompt.replace("{context}", context)
             
@@ -419,31 +431,47 @@ class RAGService:
                 messages=[{"role": "user", "content": user_message}]
             )
     
-    def _build_default_system_prompt(self, context: str) -> str:
+    def _build_default_system_prompt(self, context: str, is_youtube_content: bool = False) -> str:
         """
         Build the default system prompt with context.
         
         Args:
             context: Retrieved context text
+            is_youtube_content: Whether the content is from YouTube (no citations needed)
             
         Returns:
             System prompt with embedded context
         """
-        return f"""You are a helpful AI assistant. Use only the provided context to answer the user's question.  
-            If the context does not contain relevant information, say:  
-            "I couldn’t find information in the provided sources."  
+        if is_youtube_content:
+            return f"""You are a helpful AI assistant. Use only the provided context to answer the user's question.  
+                If the context does not contain relevant information, say:  
+                "I couldn't find information in the provided sources."  
 
-            Context:
-            {context}
+                Context:
+                {context}
 
-            Instructions:
-            - Base answers strictly on the context above  
-            - Always cite the specific source(s) you used, including page numbers if they are available in the context  
-            - Format: [Title, p. X] or [Title, pp. X–Y]  
-            - If page numbers are not available in the context, cite the source without them  
-            - Never invent or guess page numbers or citations  
-            - Be concise and accurate
-        """
+                Instructions:
+                - Base answers strictly on the context above  
+                - Provide natural, conversational responses without citations
+                - Be concise and accurate
+                - Focus on being helpful and informative
+            """
+        else:
+            return f"""You are a helpful AI assistant. Use only the provided context to answer the user's question.  
+                If the context does not contain relevant information, say:  
+                "I couldn't find information in the provided sources."  
+
+                Context:
+                {context}
+
+                Instructions:
+                - Base answers strictly on the context above  
+                - Always cite the specific source(s) you used, including page numbers if they are available in the context  
+                - Format: [Title, p. X] or [Title, pp. X–Y]  
+                - If page numbers are not available in the context, cite the source without them  
+                - Never invent or guess page numbers or citations  
+                - Be concise and accurate
+            """
     
     def get_document_info(self, document_id: str) -> Optional[Dict[str, Any]]:
         """

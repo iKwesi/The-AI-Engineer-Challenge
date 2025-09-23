@@ -176,27 +176,45 @@ class YouTubeLoader(DocumentLoader):
             YouTubeProcessingError: If transcript cannot be retrieved
         """
         try:
-            # Try to get transcript in preferred languages
+            # Create API instance
+            api = YouTubeTranscriptApi()
+            
+            # Get list of available transcripts
+            transcript_list = api.list(video_id)
+            
+            # First try manually created transcripts in preferred languages
             for lang_code in self.language_codes:
                 try:
-                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang_code])
+                    transcript = transcript_list.find_manually_created_transcript([lang_code])
+                    transcript_data = transcript.fetch()
                     formatted_text = self.formatter.format_transcript(transcript_data)
                     return formatted_text, lang_code
                 except:
                     continue
             
-            # Try to get any available transcript
+            # Then try auto-generated transcripts in preferred languages
+            for lang_code in self.language_codes:
+                try:
+                    transcript = transcript_list.find_generated_transcript([lang_code])
+                    transcript_data = transcript.fetch()
+                    formatted_text = self.formatter.format_transcript(transcript_data)
+                    return formatted_text, lang_code
+                except:
+                    continue
+            
+            # Finally, try any available transcript
             try:
-                transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
-                formatted_text = self.formatter.format_transcript(transcript_data)
-                # Try to detect language from first entry
-                language_code = 'en'  # Default fallback
-                if transcript_data and len(transcript_data) > 0:
-                    # Some transcript APIs include language info
-                    language_code = getattr(transcript_data[0], 'language', 'en')
-                return formatted_text, language_code
-            except Exception as inner_e:
-                raise YouTubeProcessingError(f"No transcript available for video {video_id}: {inner_e}")
+                # Get the first available transcript
+                available_transcripts = list(transcript_list)
+                if available_transcripts:
+                    transcript = available_transcripts[0]
+                    transcript_data = transcript.fetch()
+                    formatted_text = self.formatter.format_transcript(transcript_data)
+                    return formatted_text, transcript.language_code
+            except:
+                pass
+            
+            raise YouTubeProcessingError(f"No transcript available for video {video_id}")
             
         except Exception as e:
             raise YouTubeProcessingError(f"Failed to get transcript for video {video_id}: {e}")
