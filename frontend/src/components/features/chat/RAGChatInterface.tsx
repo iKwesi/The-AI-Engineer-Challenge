@@ -15,6 +15,15 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
 
+// Helper function to detect if citations are from YouTube content
+const isYouTubeContent = (citations: any[]): boolean => {
+  return citations.some(citation => 
+    citation.content_preview?.includes('=== YouTube Video:') ||
+    citation.content_preview?.includes('=== Transcript ===') ||
+    citation.document_name === 'unknown' && citation.content_preview?.includes('Channel:')
+  );
+};
+
 export interface RAGChatInterfaceProps {
   messages: Message[];
   loading: boolean;
@@ -196,8 +205,8 @@ const MessageBubble: React.FC<{
               {preprocessMathContent(message.content)}
             </ReactMarkdown>
 
-            {/* Citations */}
-            {message.citations && message.citations.length > 0 && (
+            {/* Citations - Skip for YouTube content */}
+            {message.citations && message.citations.length > 0 && !isYouTubeContent(message.citations) && (
               <div className="mt-3 pt-3 border-t border-muted-foreground/20">
                 <div className="text-xs text-muted-foreground mb-2">Sources:</div>
                 <div className="space-y-1">
