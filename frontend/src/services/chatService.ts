@@ -272,7 +272,7 @@ export const getConversationStatus = async (apiKey: string): Promise<Conversatio
 
     const result = await response.json();
     return result.conversation_status;
-  } catch (error) {
+  } catch {
     // If conversation status fails, assume general mode
     return {
       mode: 'general',
