@@ -354,17 +354,17 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 onClick={uploadFiles}
                 disabled={!canUpload}
                 className="flex items-center gap-2"
-                title={!apiKey?.trim() ? "Please enter your API key in the chat configuration first" : !canUpload ? "No files to upload" : "Upload files"}
+                title={!apiKey?.trim() ? "Please enter your API key in the chat configuration first" : !canUpload ? "No files to process" : "Process files"}
               >
                 {isUploading ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    Uploading...
+                    Processing...
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4" />
-                    Upload Files
+                    <Settings className="w-4 h-4" />
+                    Process Files
                   </>
                 )}
               </Button>
