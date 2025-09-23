@@ -496,8 +496,12 @@ const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
         <div className="flex-grow flex flex-col items-center justify-center p-4">
           <div className="max-w-2xl w-full text-center space-y-8">
             <h2 className="text-3xl font-semibold text-foreground">
-              Chat with your documents and YouTube videos
+              Welcome to LeChat AI
             </h2>
+            
+            <p className="text-lg text-muted-foreground">
+              Please enter your API key in the configuration to chat. You can upload your documents to enable RAG and chat with your documents.
+            </p>
             
             {/* Show loading state */}
             {loading && <LoadingIndicator />}
@@ -532,7 +536,7 @@ const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything or paste a YouTube URL"
+                  placeholder="How can I help you today?"
                   className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
                   aria-label="Chat input"
                 />
@@ -672,7 +676,7 @@ const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything or paste a YouTube URL"
+                placeholder="How can I help you today?"
                 className="w-full resize-none bg-transparent shadow-none focus-visible:outline-none p-2.5 pr-12 text-base md:text-sm"
                 aria-label="Chat input"
               />
