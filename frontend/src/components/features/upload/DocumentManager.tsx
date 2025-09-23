@@ -363,7 +363,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                   </>
                 ) : (
                   <>
-                    <Settings className="w-4 h-4" />
+                    <span className="text-sm">⚙️</span>
                     Process Files
                   </>
                 )}
