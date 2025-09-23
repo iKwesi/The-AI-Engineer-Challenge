@@ -312,7 +312,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
         {/* File Upload Tab */}
         {activeTab === 'files' && (
-        <Card padding="none">
+        <Card padding="none" style={{ backgroundColor: '#ffffff' }}>
           <CardContent className="p-4 space-y-4">
             {/* File Upload Component */}
             <FileUpload
@@ -479,7 +479,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {/* YouTube Tab */}
       {activeTab === 'youtube' && (
-        <Card padding="none">
+        <Card padding="none" style={{ backgroundColor: '#ffffff' }}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Youtube className="w-5 h-5" />
