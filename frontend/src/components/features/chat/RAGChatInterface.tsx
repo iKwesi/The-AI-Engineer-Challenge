@@ -13,8 +13,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
+import { hasYouTubeUrls, detectYouTubeUrls } from '@/services/documentService';
 import { useDocumentContext } from '@/contexts/DocumentContext';
+import useDocumentUpload from '@/hooks/useDocumentUpload';
 
 // Helper function to detect if citations are from YouTube content
 const isYouTubeContent = (citations: any[]): boolean => {
@@ -100,7 +101,7 @@ const MessageBubble: React.FC<{
               <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
                 <FileText className="w-3 h-3" />
                 <span>
-                  {message.usedContext ? 'Using document context' : 'Using general knowledge'}
+                  {message.usedContext ? 'Using RAG mode' : 'Using general knowledge'}
                 </span>
                 {message.confidenceScore !== undefined && (
                   <span className="ml-2 px-1.5 py-0.5 bg-muted rounded text-xs">
@@ -240,7 +241,7 @@ const MessageBubble: React.FC<{
                     onClick={() => onFallbackConfirm(false)}
                     className="text-xs"
                   >
-                    Stay in Document Mode
+                    Stay in RAG Mode
                   </Button>
                 </div>
               </div>
@@ -410,7 +411,26 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   // Get document context for refreshing after YouTube processing
   const { refreshDocuments } = useDocumentContext();
 
-  // Handle YouTube processing
+  // Use the same document upload hook that DocumentManager uses for proper integration
+  const { processYouTube } = useDocumentUpload({
+    apiKey,
+    onYouTubeProcessComplete: async (response) => {
+      console.log('YouTube processing completed:', response);
+      setYoutubeDetection({ urls: [], show: false });
+      
+      // Refresh documents to detect the new YouTube content and switch to RAG mode
+      console.log('Refreshing documents to enable RAG mode...');
+      await refreshDocuments();
+      
+      setIsProcessingYouTube(false);
+    },
+    onError: (error) => {
+      console.error('YouTube processing failed:', error);
+      setIsProcessingYouTube(false);
+    }
+  });
+
+  // Handle YouTube processing using the proper document upload flow
   const handleYouTubeProcess = useCallback(async (url: string) => {
     if (!apiKey?.trim()) {
       return;
@@ -418,25 +438,18 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
 
     setIsProcessingYouTube(true);
     try {
-      const result = await processYouTubeUrl(url, apiKey);
-      setYoutubeDetection({ urls: [], show: false });
-      
-      // Refresh documents to detect the new YouTube content and switch to RAG mode
-      console.log('YouTube processing completed, refreshing documents...');
-      await refreshDocuments();
-      
-      console.log('YouTube processing successful:', result);
+      await processYouTube(url);
     } catch (error) {
+      // Error handling is done in the hook callbacks
       console.error('YouTube processing failed:', error);
-    } finally {
       setIsProcessingYouTube(false);
     }
-  }, [apiKey, refreshDocuments]);
+  }, [apiKey, processYouTube]);
 
-  // Handle document mode entered
-  const handleDocumentModeEntered = useCallback(() => {
+  // Handle RAG mode entered
+  const handleRAGModeEntered = useCallback(() => {
     // Optionally refresh conversation mode status or show notification
-    console.log('Document mode entered');
+    console.log('RAG mode entered');
   }, []);
 
   // Handle upload error

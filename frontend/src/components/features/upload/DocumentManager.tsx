@@ -44,20 +44,20 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     setShowYouTubeSuccess(true);
     setYoutubeUrl(''); // Clear the input
     
-    // If YouTube was successfully processed but document mode wasn't entered automatically,
+    // If YouTube was successfully processed but RAG mode wasn't entered automatically,
     // try to enter it manually
     if (response.status === 'success') {
       if (response.entered_document_mode) {
         setDocumentMode(true);
         onDocumentModeEntered?.();
       } else {
-        // Try to enter document mode manually
+        // Try to enter RAG mode manually
         try {
           await enterDocumentMode(apiKey);
           setDocumentMode(true);
           onDocumentModeEntered?.();
         } catch (error) {
-          console.warn('Failed to enter document mode manually:', error);
+          console.warn('Failed to enter RAG mode manually:', error);
           // Don't show error to user as YouTube was processed successfully
         }
       }
@@ -95,20 +95,20 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       setLastUploadResponse(response);
       setShowUploadSuccess(true);
       
-      // If documents were successfully uploaded but document mode wasn't entered automatically,
+      // If documents were successfully uploaded but RAG mode wasn't entered automatically,
       // try to enter it manually
       if (response.successful_files > 0) {
         if (response.entered_document_mode) {
           setDocumentMode(true);
           onDocumentModeEntered?.();
         } else {
-          // Try to enter document mode manually
+          // Try to enter RAG mode manually
           try {
             await enterDocumentMode(apiKey);
             setDocumentMode(true);
             onDocumentModeEntered?.();
           } catch (error) {
-            console.warn('Failed to enter document mode manually:', error);
+            console.warn('Failed to enter RAG mode manually:', error);
             // Don't show error to user as documents were uploaded successfully
           }
         }
@@ -276,7 +276,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                 ? `Successfully uploaded ${lastUploadResponse.successful_files} file(s).`
                 : `Uploaded ${lastUploadResponse.successful_files} of ${lastUploadResponse.total_files} files.`
               }
-              {lastUploadResponse.entered_document_mode && " Document mode activated."}
+              {lastUploadResponse.entered_document_mode && " RAG mode activated."}
               <Button
                 variant="ghost"
                 size="sm"
@@ -297,7 +297,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               {lastYouTubeResponse.video_title && `"${lastYouTubeResponse.video_title}" `}
               processed successfully.
               {lastYouTubeResponse.chunks_processed && ` ${lastYouTubeResponse.chunks_processed} chunks created.`}
-              {lastYouTubeResponse.entered_document_mode && " Document mode activated."}
+              {lastYouTubeResponse.entered_document_mode && " RAG mode activated."}
               <Button
                 variant="ghost"
                 size="sm"

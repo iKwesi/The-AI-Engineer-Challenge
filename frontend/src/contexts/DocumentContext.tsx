@@ -14,11 +14,11 @@ export interface Document {
 
 export interface DocumentContextType {
   documents: Document[];
-  isDocumentMode: boolean;
+  isDocumentMode: boolean; // Keep internal name for compatibility
   isLoading: boolean;
   error: string | null;
   refreshDocuments: () => Promise<void>;
-  setDocumentMode: (mode: boolean) => void;
+  setDocumentMode: (mode: boolean) => void; // Keep internal name for compatibility
   handleDocumentRemoved: () => Promise<void>;
 }
 
@@ -101,39 +101,39 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
       // Update documents state first
       setDocuments(validDocuments);
 
-      // Simple mode logic: if we have documents, we're in document mode
+      // Simple mode logic: if we have documents, we're in RAG mode
       // If no documents, we're in general mode
-      const shouldBeInDocumentMode = validDocuments.length > 0;
+      const shouldBeInRAGMode = validDocuments.length > 0;
       const currentBackendMode = modeResponse.mode === 'document';
 
-      if (shouldBeInDocumentMode && !currentBackendMode) {
-        // We have documents but backend is in general mode - enter document mode
-        console.log('Documents found, entering document mode');
+      if (shouldBeInRAGMode && !currentBackendMode) {
+        // We have documents but backend is in general mode - enter RAG mode
+        console.log('Documents found, entering RAG mode');
         try {
           await enterDocumentMode(apiKey);
           setIsDocumentMode(true);
-          console.log('Successfully entered document mode');
+          console.log('Successfully entered RAG mode');
         } catch (error) {
-          console.warn('Failed to enter document mode:', error);
-          // Still set frontend to document mode since we have documents
+          console.warn('Failed to enter RAG mode:', error);
+          // Still set frontend to RAG mode since we have documents
           setIsDocumentMode(true);
         }
-      } else if (!shouldBeInDocumentMode && currentBackendMode) {
-        // No documents but backend is in document mode - exit document mode
-        console.log('No documents found, exiting document mode');
+      } else if (!shouldBeInRAGMode && currentBackendMode) {
+        // No documents but backend is in document mode - exit RAG mode
+        console.log('No documents found, exiting RAG mode');
         try {
           await exitDocumentMode(apiKey);
           setIsDocumentMode(false);
-          console.log('Successfully exited document mode');
+          console.log('Successfully exited RAG mode');
         } catch (error) {
-          console.warn('Failed to exit document mode:', error);
+          console.warn('Failed to exit RAG mode:', error);
           // Still set frontend to general mode since we have no documents
           setIsDocumentMode(false);
         }
       } else {
         // Backend and frontend are in sync
-        setIsDocumentMode(shouldBeInDocumentMode);
-        console.log(`Mode synchronized: ${shouldBeInDocumentMode ? 'document' : 'general'} mode`);
+        setIsDocumentMode(shouldBeInRAGMode);
+        console.log(`Mode synchronized: ${shouldBeInRAGMode ? 'RAG' : 'general'} mode`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh documents';
