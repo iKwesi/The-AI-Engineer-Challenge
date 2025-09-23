@@ -38,26 +38,16 @@ export function useChat() {
   const [pendingFallback, setPendingFallback] = useState<FallbackRequest | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Handle hydration and localStorage loading
+  // Handle hydration - no localStorage persistence for API key
   useEffect(() => {
     setIsHydrated(true);
-    // Load API key from localStorage after hydration
-    const storedApiKey = localStorage.getItem('rag-chat-api-key') || '';
-    if (storedApiKey) {
-      setApiKey(storedApiKey);
-    }
+    // API key is not persisted - users must enter it fresh each session
   }, []);
 
-  // Persist API key to localStorage when it changes
+  // Simple API key setter without localStorage persistence
   const handleSetApiKey = useCallback((key: string) => {
     setApiKey(key);
-    if (typeof window !== 'undefined') {
-      if (key.trim()) {
-        localStorage.setItem('rag-chat-api-key', key);
-      } else {
-        localStorage.removeItem('rag-chat-api-key');
-      }
-    }
+    // No localStorage persistence - API key is cleared on refresh
   }, []);
 
   const sendChat = async (userMessage: string) => {
