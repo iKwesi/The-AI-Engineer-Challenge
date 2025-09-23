@@ -98,6 +98,7 @@ async def run_test():
         if 'confidence_score' in result:
             max_confidence = max(max_confidence, result['confidence_score'])
     
+    # Set recommended threshold based on analysis
     if max_confidence < 0.7:
         recommended_threshold = min(0.6, max_confidence + 0.1)
         print(f"🔧 Current threshold (0.7) is too high!")
@@ -105,7 +106,9 @@ async def run_test():
         print(f"   - Recommended threshold: {recommended_threshold:.1f}")
         print(f"   - This would allow the query to be answered from documents")
     else:
+        recommended_threshold = 0.6  # Conservative recommendation even if scores are good
         print(f"✅ Confidence scores look good (max: {max_confidence:.3f})")
+        print(f"   - Recommended threshold: {recommended_threshold:.1f} (conservative)")
     
     print(f"\n📝 To fix this issue:")
     print(f"   1. Edit aimakerspace/processing_utils/conversation_mode_manager.py")
