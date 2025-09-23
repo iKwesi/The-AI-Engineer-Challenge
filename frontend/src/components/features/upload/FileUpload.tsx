@@ -221,8 +221,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </p>
         
         <p className="text-xs text-muted-foreground">
-          {multiple ? `Up to ${maxFiles} files, ` : "Single file, "}
-          {multiple ? `${formatFileSize(maxSizeBytes)} total` : `max ${formatFileSize(maxSizeBytes)}`}
+          {multiple ? `Up to ${formatFileSize(maxSizeBytes)} total` : `max ${formatFileSize(maxSizeBytes)}`}
         </p>
         
         <p className="text-xs text-muted-foreground mt-1">
