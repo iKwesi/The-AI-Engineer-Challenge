@@ -31,15 +31,18 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
       {/* Sidebar */}
       <div
         className={cn(
-          "flex-shrink-0 border-r bg-card transition-all duration-300 ease-in-out",
+          "flex-shrink-0 border-r transition-all duration-300 ease-in-out",
           sidebarOpen ? "w-96" : "w-0"
         )}
-        style={{ width: sidebarOpen ? `${sidebarWidth}px` : '0px' }}
+        style={{ 
+          width: sidebarOpen ? `${sidebarWidth}px` : '0px',
+          backgroundColor: '#f5f4ed'
+        }}
       >
         {sidebarOpen && (
           <div className="h-full flex flex-col">
             {/* Sidebar Header */}
-            <div className="flex-shrink-0 p-4 border-b bg-card">
+            <div className="flex-shrink-0 p-4 border-b" style={{ backgroundColor: '#f5f4ed' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Upload className="w-5 h-5 text-primary" />
@@ -71,7 +74,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
       {/* Sidebar Toggle Button (when closed) */}
       {!sidebarOpen && (
-        <div className="flex-shrink-0 w-12 border-r bg-card flex items-start justify-center pt-4">
+        <div className="flex-shrink-0 w-12 border-r flex items-start justify-center pt-4" style={{ backgroundColor: '#f5f4ed' }}>
           <Button
             variant="ghost"
             size="sm"
