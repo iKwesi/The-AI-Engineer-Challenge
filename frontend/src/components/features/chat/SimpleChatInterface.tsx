@@ -433,7 +433,7 @@ const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
       <div className="flex flex-col h-full bg-background text-foreground">
         <header className="border-b bg-card p-4 shadow-sm">
           <div className="w-full flex items-center justify-between px-4">
-            <h1 className="text-xl font-semibold">RAG AI Chat</h1>
+            <h1 className="text-xl font-semibold">LeChat AI</h1>
             <div className="relative" ref={dropdownRef}>
               <Button
                 variant="ghost"
@@ -564,7 +564,7 @@ const SimpleChatInterface: React.FC<SimpleChatInterfaceProps> = ({
       {/* Header */}
       <header className="flex-shrink-0 border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
-          <h1 className="text-xl font-semibold">RAG AI Chat</h1>
+          <h1 className="text-xl font-semibold">LeChat AI</h1>
           <div className="relative" ref={dropdownRef}>
             <Button
               variant="ghost"
