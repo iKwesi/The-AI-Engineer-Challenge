@@ -538,18 +538,6 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       )}
 
 
-        {/* Help Text */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>
-            <strong>Supported formats:</strong> PDF, TXT, DOCX, DOC, XLSX, XLS, CSV
-          </p>
-          <p>
-            <strong>File limits:</strong> 50MB total for all files
-          </p>
-          <p>
-            <strong>Document mode:</strong> Automatically activated after successful upload
-          </p>
-        </div>
       </div>
     </div>
   );
