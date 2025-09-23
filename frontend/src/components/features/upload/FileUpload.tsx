@@ -183,7 +183,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {/* Upload Area */}
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center transition-colors flex flex-col justify-center",
+          "border-2 border-dashed rounded-lg p-6 text-center transition-colors flex flex-col justify-center bg-background",
           isDragOver && !disabled ? "border-primary bg-primary/5" : "border-muted-foreground/25",
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/50",
           uploadedFiles.length > 0 ? "bg-muted/20" : ""
