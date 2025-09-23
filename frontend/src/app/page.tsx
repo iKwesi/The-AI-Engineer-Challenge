@@ -112,7 +112,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="h-screen">
+    <main className="h-full">
       <DocumentProvider apiKey={apiKey}>
         <SidebarLayout
           apiKey={apiKey}

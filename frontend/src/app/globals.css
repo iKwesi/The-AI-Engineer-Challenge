@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Prevent page-level scrolling and ensure full height layout */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Force light theme colors directly */
 * {
   border-color: hsl(0 0% 90%);

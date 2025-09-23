@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Upload, Youtube, FileText, X } from 'lucide-react';
+import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Youtube, FileText, X } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
@@ -13,7 +13,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import DocumentManager from '@/components/features/upload/DocumentManager';
 import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
 
 export interface RAGChatInterfaceProps {
@@ -323,7 +322,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showDocumentManager, setShowDocumentManager] = useState(false);
   const [youtubeDetection, setYoutubeDetection] = useState<{
     urls: string[];
     show: boolean;
@@ -439,14 +437,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
           <div className="w-full flex items-center justify-between px-4">
             <h1 className="text-xl font-semibold">RAG AI Chat</h1>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setShowDocumentManager(!showDocumentManager)}
-                className="flex items-center gap-2 text-sm"
-              >
-                <Upload className="w-4 h-4" />
-                Documents
-              </Button>
               <div className="relative" ref={dropdownRef}>
                 <Button
                   variant="ghost"
@@ -506,18 +496,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
           </div>
         </header>
 
-        {/* Document Manager */}
-        {showDocumentManager && (
-          <div className="border-b bg-muted/20 p-4">
-            <div className="max-w-4xl mx-auto">
-              <DocumentManager
-                apiKey={apiKey}
-                onDocumentModeEntered={handleDocumentModeEntered}
-                onError={handleUploadError}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Centered welcome content */}
         <div className="flex-grow flex flex-col items-center justify-center p-4">
@@ -590,18 +568,10 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
     <div className="flex flex-col h-full bg-background text-foreground">
       {/* Header */}
       <header className="flex-shrink-0 border-b bg-card p-4 shadow-sm">
-        <div className="w-full flex items-center justify-between px-4">
-          <h1 className="text-xl font-semibold">RAG AI Chat</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setShowDocumentManager(!showDocumentManager)}
-              className="flex items-center gap-2 text-sm"
-            >
-              <Upload className="w-4 h-4" />
-              Documents
-            </Button>
-            <div className="relative" ref={dropdownRef}>
+          <div className="w-full flex items-center justify-between px-4">
+            <h1 className="text-xl font-semibold">RAG AI Chat</h1>
+            <div className="flex items-center gap-2">
+              <div className="relative" ref={dropdownRef}>
               <Button
                 variant="ghost"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -660,18 +630,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
         </div>
       </header>
 
-      {/* Document Manager */}
-      {showDocumentManager && (
-        <div className="flex-shrink-0 border-b bg-muted/20 p-4 max-h-96 overflow-y-auto">
-          <div className="max-w-4xl mx-auto">
-            <DocumentManager
-              apiKey={apiKey}
-              onDocumentModeEntered={handleDocumentModeEntered}
-              onError={handleUploadError}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Chat Messages Area - takes remaining space */}
       <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>

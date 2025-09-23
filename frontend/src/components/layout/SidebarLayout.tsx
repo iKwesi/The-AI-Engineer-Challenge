@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Upload, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { cn } from '@/lib/utils';
-import DocumentManager from '@/components/features/upload/DocumentManager';
+import { DocumentManager } from '@/components/features/upload/DocumentManager';
 
 export interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -57,7 +57,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
             </div>
 
             {/* Sidebar Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-hidden p-4">
               <DocumentManager
                 apiKey={apiKey}
                 onDocumentModeEntered={onDocumentModeEntered}
