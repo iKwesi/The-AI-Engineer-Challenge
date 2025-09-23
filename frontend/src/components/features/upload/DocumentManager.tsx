@@ -313,7 +313,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         {/* File Upload Tab */}
         {activeTab === 'files' && (
         <Card padding="none">
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 space-y-4">
             {/* File Upload Component */}
             <FileUpload
               onFilesSelected={handleFilesSelected}
