@@ -391,7 +391,7 @@ class RAGService:
             
             # Check if this is YouTube content (no citations needed)
             is_youtube_content = any(
-                chunk.metadata.get('document_type') == 'youtube' or 
+                chunk.metadata.get('document_type', '').lower() == 'youtube' or 
                 chunk.metadata.get('content_type') == 'youtube_transcript'
                 for chunk in search_result.chunks
             )
