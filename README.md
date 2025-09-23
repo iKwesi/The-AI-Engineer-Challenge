@@ -1,186 +1,273 @@
-<p align = "center" draggable=”false” ><img src="https://github.com/AI-Maker-Space/LLM-Dev-101/assets/37101144/d1343317-fa2f-41e1-8af1-1dbb18399719" 
-     width="200px"
-     height="auto"/>
-</p>
+# 🚀 The AI Engineer Challenge: RAG-Powered Chat Playground
 
+> **Where documents meet AI magic!** ✨ Transform your static files into interactive conversations with the power of Retrieval-Augmented Generation (RAG).
 
-## <h1 align="center" id="heading"> 👋 Welcome to the AI Engineer Challenge</h1>
+## 🎯 What's This All About?
 
-## 🤖 Your First Vibe Coding LLM Application
+Ever wished you could have a conversation with your documents? Well, now you can! This isn't just another chatbot – it's a sophisticated AI playground that lets you:
 
-> If you are a novice, and need a bit more help to get your dev environment off the ground, check out this [Setup Guide](docs/GIT_SETUP.md). This guide will walk you through the 'git' setup you need to get started.
+- 💬 **Chat with OpenAI models** using your own API key
+- 📄 **Upload documents** (PDFs, Word docs, Excel files, text files) and chat with their content
+- 🎥 **Process YouTube videos** and discuss their transcripts
+- 🧠 **Smart context switching** between general knowledge and document-specific answers
+- 🔍 **Advanced RAG capabilities** with adaptive thresholds and conflict resolution
 
-> For additional context on LLM development environments and API key setup, you can also check out our [Interactive Dev Environment for LLM Development](https://github.com/AI-Maker-Space/Interactive-Dev-Environment-for-AI-Engineers).
+Think of it as giving your documents a voice and your AI a memory!
 
-In this repository, we'll walk you through the steps to create a LLM (Large Language Model) powered application with a vibe-coded frontend!
+## 🏗️ Architecture Overview
 
-Are you ready? Let's get started!
+This bad boy is built with a modern, scalable architecture:
 
-<details>
-  <summary>🖥️ Accessing "gpt-4.1-mini" (ChatGPT) like a developer</summary>
+### Frontend (Next.js + React + TypeScript)
+- **Professional Chat Interface** with streaming responses
+- **Document Management** with drag-and-drop uploads
+- **Smart UI Components** built with Radix UI and Tailwind CSS
+- **Responsive Design** that looks great on any device
 
-1. Head to [this notebook](https://colab.research.google.com/drive/1sT7rzY_Lb1_wS0ELI1JJfff0NUEcSD72?usp=sharing) and follow along with the instructions!
+### Backend (FastAPI + Python)
+- **Streaming Chat API** for real-time conversations
+- **RAG Service** with intelligent document processing
+- **Vector Database** for lightning-fast semantic search
+- **YouTube Integration** for video transcript processing
 
-2. Complete the notebook and try out your own system/assistant messages!
+### AI Magic (OpenAI + Custom RAG)
+- **GPT-4 Integration** with custom system prompts
+- **Intelligent Chunking** with page-aware processing
+- **Adaptive Thresholds** for relevance scoring
+- **Conflict Resolution** for multi-document scenarios
 
-That's it! Head to the next step and start building your application!
+## 🚀 Quick Start Guide
 
-</details>
+### Prerequisites
 
+Before we dive in, make sure you have:
+- **Node.js 18+** (for the frontend)
+- **Python 3.8+** (for the backend)
+- **OpenAI API Key** (get one at [platform.openai.com](https://platform.openai.com))
 
-<details>
-  <summary>🏗️ Forking & Cloning This Repository</summary>
+### 1. Clone & Setup
 
-Before you begin, make sure you have:
+```bash
+# Clone this awesome repo
+git clone https://github.com/iKwesi/The-AI-Engineer-Challenge.git
+cd The-AI-Engineer-Challenge
 
-1. 👤 A GitHub account (you'll need to replace `YOUR_GITHUB_USERNAME` with your actual username)
-2. 🔧 Git installed on your local machine
-3. 💻 A code editor (like Cursor, VS Code, etc.)
-4. ⌨️ Terminal access (Mac/Linux) or Command Prompt/PowerShell (Windows)
-5. 🔑 A GitHub Personal Access Token (for authentication)
+# Install backend dependencies
+pip install -r api/requirements.txt
 
-Got everything in place? Let's move on!
+# Install frontend dependencies
+cd frontend
+npm install
+```
 
-1. Fork [this](https://github.com/AI-Maker-Space/The-AI-Engineer-Challenge) repo!
+### 2. Fire Up the Backend
 
-     ![image](https://i.imgur.com/bhjySNh.png)
+```bash
+# From the root directory
+cd api
+python app.py
+```
 
-1. Clone your newly created repo.
+Your API will be running at `http://localhost:8000` 🎉
 
-     ``` bash
-     # First, navigate to where you want the project folder to be created
-     cd PATH_TO_DESIRED_PARENT_DIRECTORY
+### 3. Launch the Frontend
 
-     # Then clone (this will create a new folder called The-AI-Engineer-Challenge)
-     git clone git@github.com:<YOUR GITHUB USERNAME>/The-AI-Engineer-Challenge.git
-     ```
+```bash
+# In a new terminal, from the frontend directory
+cd frontend
+npm run dev
+```
 
-     > Note: This command uses SSH. If you haven't set up SSH with GitHub, the command will fail. In that case, use HTTPS by replacing `git@github.com:` with `https://github.com/` - you'll then be prompted for your GitHub username and personal access token.
+Your app will be live at `http://localhost:3000` 🚀
 
-2. Verify your git setup:
+### 4. Start Chatting!
 
-     ```bash
-     # Check that your remote is set up correctly
-     git remote -v
+1. Open your browser to `http://localhost:3000`
+2. Enter your OpenAI API key in the configuration section
+3. Start chatting or upload some documents to get the full experience!
 
-     # Check the status of your repository
-     git status
+## 🎮 How to Use
 
-     # See which branch you're on
-     git branch
-     ```
+### Basic Chat Mode
+Just type your question and hit enter! The AI will respond using general knowledge.
 
-     <!-- > Need more help with git? Check out our [Detailed Git Setup Guide](docs/GIT_SETUP.md) for a comprehensive walkthrough of git configuration and best practices. -->
+### Document Mode (The Cool Stuff!)
+1. **Upload Documents**: Drag and drop your files or click to browse
+2. **Auto-Magic**: The system automatically enters "document mode"
+3. **Smart Conversations**: Ask questions about your documents and get precise, cited answers
+4. **Fallback Handling**: If your question isn't in the docs, the AI will offer to use general knowledge
 
-3. Open the freshly cloned repository inside Cursor!
+### YouTube Mode
+1. Paste a YouTube URL in the chat
+2. The system processes the video transcript
+3. Chat about the video content like it's a document!
 
-     ```bash
-     cd The-AI-Engineering-Challenge
-     cursor .
-     ```
+## 🛠️ Development
 
-4. Check out the existing backend code found in `/api/app.py`
-
-</details>
-
-<details>
-  <summary>🔥Setting Up for Vibe Coding Success </summary>
-
-While it is a bit counter-intuitive to set things up before jumping into vibe-coding - it's important to remember that there exists a gradient betweeen AI-Assisted Development and Vibe-Coding. We're only reaching *slightly* into AI-Assisted Development for this challenge, but it's worth it!
-
-1. Check out the rules in `.cursor/rules/` and add theme-ing information like colour schemes in `frontend-rule.mdc`! You can be as expressive as you'd like in these rules!
-2. We're going to index some docs to make our application more likely to succeed. To do this - we're going to start with `CTRL+SHIFT+P` (or `CMD+SHIFT+P` on Mac) and we're going to type "custom doc" into the search bar. 
-
-     ![image](https://i.imgur.com/ILx3hZu.png)
-3. We're then going to copy and paste `https://nextjs.org/docs` into the prompt.
-
-     ![image](https://i.imgur.com/psBjpQd.png)
-
-4. We're then going to use the default configs to add these docs to our available and indexed documents.
-
-     ![image](https://i.imgur.com/LULLeaF.png)
-
-5. After that - you will do the same with Vercel's documentation. After which you should see:
-
-     ![image](https://i.imgur.com/hjyXhhC.png) 
-
-</details>
-
-<details>
-  <summary>😎 Vibe Coding a Front End for the FastAPI Backend</summary>
-
-1. Use `Command-L` or `CTRL-L` to open the Cursor chat console. 
-
-2. Set the chat settings to the following:
-
-     ![image](https://i.imgur.com/LSgRSgF.png)
-
-3. Ask Cursor to create a frontend for your application. Iterate as much as you like!
-
-4. Run the frontend using the instructions Cursor provided. 
-
-> NOTE: If you run into any errors, copy and paste them back into the Cursor chat window - and ask Cursor to fix them!
-
-> NOTE: You have been provided with a backend in the `/api` folder - please ensure your Front End integrates with it!
-
-</details>
-
-<details>
-  <summary>🚀 Deploying Your First LLM-powered Application with Vercel</summary>
-
-1. Ensure you have signed into [Vercel](https://vercel.com/) with your GitHub account.
-
-2. Ensure you have `npm` (this may have been installed in the previous vibe-coding step!) - if you need help with that, ask Cursor!
-
-3. Run the command:
-
-     ```bash
-     npm install -g vercel
-     ```
-
-4. Run the command:
-
-     ```bash
-     vercel
-     ```
-
-5. Follow the in-terminal instructions. (Below is an example of what you will see!)
-
-     ![image](https://i.imgur.com/D1iKGCq.png)
-
-6. Once the build is completed - head to the provided link and try out your app!
-
-> NOTE: Remember, if you run into any errors - ask Cursor to help you fix them!
-
-</details>
-
-### Vercel Link to Share
-
-You'll want to make sure you share you *domains* hyperlink to ensure people can access your app!
-
-![image](https://i.imgur.com/mpXIgIz.png)
-
-> NOTE: Test this is the public link by trying to open your newly deployed site in an Incognito browser tab!
-
-### 🎉 Congratulations! 
-
-You just deployed your first LLM-powered application! 🚀🚀🚀 Get on linkedin and post your results and experience! Make sure to tag us at @AIMakerspace!
-
-Here's a template to get your post started!
+### Project Structure
 
 ```
-🚀🎉 Exciting News! 🎉🚀
-
-🏗️ Today, I'm thrilled to announce that I've successfully built and shipped my first-ever LLM using the powerful combination of , and the OpenAI API! 🖥️
-
-Check it out 👇
-[LINK TO APP]
-
-A big shoutout to the @AI Makerspace for all making this possible. Couldn't have done it without the incredible community there. 🤗🙏
-
-Looking forward to building with the community! 🙌✨ Here's to many more creations ahead! 🥂🎉
-
-Who else is diving into the world of AI? Let's connect! 🌐💡
-
-#FirstLLMApp 
+├── frontend/                 # Next.js React app
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── services/       # API communication
+│   │   └── utils/          # Helper functions
+├── api/                     # FastAPI backend
+│   ├── app.py              # Main API server
+│   └── requirements.txt    # Python dependencies
+├── aimakerspace/           # Core AI/RAG functionality
+│   ├── document_utils/     # Document processing
+│   ├── openai_utils/       # OpenAI integration
+│   └── processing_utils/   # RAG and conversation management
+└── docs/                   # Comprehensive documentation
 ```
+
+### Running Tests
+
+```bash
+# Frontend tests
+cd frontend
+npm test
+
+# Backend tests (from root)
+python -m pytest tests/
+```
+
+### Code Quality
+
+We use:
+- **ESLint** for JavaScript/TypeScript linting
+- **Prettier** for code formatting
+- **TypeScript** for type safety
+- **Jest** for testing
+
+## 🌟 Key Features
+
+### 🧠 Smart RAG System
+- **Page-Aware Chunking**: Maintains document structure for better context
+- **Adaptive Thresholds**: Automatically adjusts relevance scoring
+- **Multi-Document Support**: Handle conflicts when documents disagree
+- **Citation Tracking**: Always know where answers come from
+
+### 💬 Professional Chat Interface
+- **Streaming Responses**: See answers appear in real-time
+- **Markdown Support**: Rich formatting with math equations (LaTeX)
+- **Message History**: Keep track of your conversations
+- **Error Handling**: Graceful fallbacks when things go wrong
+
+### 📁 Document Management
+- **Multiple Formats**: PDF, DOCX, XLSX, TXT, and more
+- **Batch Upload**: Process multiple files at once
+- **Smart Processing**: Automatic format detection and optimization
+- **Storage Management**: Easy document removal and cleanup
+
+### 🎥 YouTube Integration
+- **Transcript Extraction**: Automatically get video transcripts
+- **Content Analysis**: Chat about video content like any document
+- **Error Handling**: Graceful handling of videos without transcripts
+
+## 🚀 Deployment
+
+### Vercel (Recommended for Frontend)
+
+The frontend is optimized for Vercel deployment:
+
+```bash
+# Deploy to Vercel
+cd frontend
+npx vercel --prod
+```
+
+### Backend Deployment
+
+The FastAPI backend can be deployed to:
+- **Railway**
+- **Heroku**
+- **Google Cloud Run**
+- **AWS Lambda** (with Mangum)
+
+Check out the deployment guides in the `docs/` folder!
+
+## 🤝 Contributing
+
+We love contributions! Here's how to get involved:
+
+1. **Fork the repo**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and add tests
+4. **Commit your changes**: `git commit -m 'Add amazing feature'`
+5. **Push to the branch**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
+
+### Development Guidelines
+
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Keep commits atomic and well-described
+
+## 📚 Documentation
+
+Dive deeper with our comprehensive docs:
+
+- **[Product Requirements](docs/prd.md)** - What we're building and why
+- **[Frontend Architecture](docs/architecture/)** - Technical deep-dive
+- **[API Documentation](api/README.md)** - Backend API reference
+- **[Testing Guide](docs/TESTING_GUIDE.md)** - How to test everything
+- **[RAG Implementation](docs/rag-implementation-prd.md)** - The AI magic explained
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**"API key not working"**
+- Make sure your OpenAI API key is valid and has credits
+- Check that you're using the correct key format (starts with `sk-`)
+
+**"Documents not uploading"**
+- Check file size (max 50MB)
+- Ensure file format is supported
+- Try refreshing the page and uploading again
+
+**"Chat responses are slow"**
+- This is normal for large documents
+- Try smaller chunks or fewer documents
+- Check your internet connection
+
+### Getting Help
+
+- 📖 Check the [FAQ](FAQandCommonIssues.md)
+- 🐛 [Open an issue](https://github.com/iKwesi/The-AI-Engineer-Challenge/issues)
+- 💬 Start a [discussion](https://github.com/iKwesi/The-AI-Engineer-Challenge/discussions)
+
+## 🎉 What's Next?
+
+This project is actively evolving! Upcoming features include:
+
+- 🔐 **User Authentication** - Save your documents and conversations
+- 🌐 **Multi-language Support** - Chat in your preferred language
+- 📊 **Analytics Dashboard** - Track your usage and insights
+- 🤖 **Custom AI Models** - Bring your own models
+- 🔗 **API Integrations** - Connect to more data sources
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **OpenAI** for the amazing GPT models
+- **Vercel** for seamless deployment
+- **The open-source community** for the incredible tools and libraries
+- **You** for checking out this project! 🎉
+
+---
+
+**Ready to turn your documents into conversations?** 🚀
+
+[Get Started](#-quick-start-guide) | [View Docs](docs/) | [Report Issues](https://github.com/iKwesi/The-AI-Engineer-Challenge/issues)
+
+---
+
+*Built with ❤️ by developers who believe AI should be accessible, powerful, and fun to use.*
