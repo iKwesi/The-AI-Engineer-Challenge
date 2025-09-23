@@ -354,7 +354,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               uploadedFiles={uploadedFiles}
               multiple={true}
               maxFiles={10}
-              maxSizeBytes={50 * 1024 * 1024} // 50MB
+              maxSizeBytes={10 * 1024 * 1024} // 10MB
               disabled={isUploading}
             />
 

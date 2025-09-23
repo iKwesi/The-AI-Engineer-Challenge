@@ -237,8 +237,8 @@ class ConflictDetectionResponse(BaseModel):
 # Key: API key hash, Value: RAGService instance
 rag_services: Dict[str, RAGService] = {}
 
-# File size limit (50MB)
-MAX_FILE_SIZE = 50 * 1024 * 1024
+# File size limit (10MB)
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 def get_rag_service(api_key: str) -> RAGService:
     """Get or create RAG service instance for the given API key."""
@@ -251,7 +251,7 @@ def get_rag_service(api_key: str) -> RAGService:
     # Create or get RAG service for this API key
     if api_key_hash not in rag_services:
         chunking_config = ChunkingConfig(chunk_size=1000, overlap=200)
-        processing_limits = ProcessingLimits(max_file_size_mb=50)
+        processing_limits = ProcessingLimits(max_file_size_mb=10)
         rag_services[api_key_hash] = RAGService(
             api_key=api_key,  # Use the actual API key passed from frontend
             chunking_config=chunking_config,

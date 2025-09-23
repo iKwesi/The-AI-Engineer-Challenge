@@ -68,7 +68,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   uploadedFiles,
   multiple = false,
   maxFiles = 10,
-  maxSizeBytes = 50 * 1024 * 1024, // 50MB default
+  maxSizeBytes = 10 * 1024 * 1024, // 10MB default
   acceptedTypes = SUPPORTED_TYPES,
   disabled = false,
   className

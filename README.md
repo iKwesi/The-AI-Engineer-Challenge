@@ -226,7 +226,7 @@ Dive deeper with our comprehensive docs:
 - Check that you're using the correct key format (starts with `sk-`)
 
 **"Documents not uploading"**
-- Check file size (max 50MB)
+- Check file size (max 10MB)
 - Ensure file format is supported
 - Try refreshing the page and uploading again
 
