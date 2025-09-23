@@ -434,7 +434,7 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
   if (showWelcomeScreen) {
     // Welcome screen layout - centered like ChatGPT with document upload
     return (
-      <div className="flex flex-col h-screen bg-background text-foreground">
+      <div className="flex flex-col h-full bg-background text-foreground">
         <header className="border-b bg-card p-4 shadow-sm">
           <div className="w-full flex items-center justify-between px-4">
             <h1 className="text-xl font-semibold">RAG AI Chat</h1>
@@ -587,7 +587,7 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
 
   // Chat conversation layout - using flexbox instead of fixed positioning
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="flex flex-col h-full bg-background text-foreground">
       {/* Header */}
       <header className="flex-shrink-0 border-b bg-card p-4 shadow-sm">
         <div className="w-full flex items-center justify-between px-4">
