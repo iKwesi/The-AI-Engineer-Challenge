@@ -390,14 +390,6 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               </Alert>
             )}
 
-            {/* Debug Info (remove in production) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                <strong>Debug:</strong> API Key: {apiKey ? '✓ Present' : '✗ Missing'}, 
-                Pending: {stats.pending}, 
-                Can Upload: {canUpload ? '✓' : '✗'}
-              </div>
-            )}
 
             {/* Uploaded Documents Section */}
             {documents.length > 0 && (
