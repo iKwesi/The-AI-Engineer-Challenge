@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from '@/lib/utils';
 import FileUpload from './FileUpload';
 import useDocumentUpload from '@/hooks/useDocumentUpload';
-import { hasYouTubeUrls, detectYouTubeUrls, enterDocumentMode, removeDocument } from '@/services/documentService';
+import { hasYouTubeUrls, detectYouTubeUrls, enterDocumentMode, removeDocument, clearAllDocuments } from '@/services/documentService';
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import type { DocumentUploadResponse, YouTubeProcessResponse } from '@/services/documentService';
 
@@ -215,6 +215,39 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
   }, [apiKey, handleError, handleDocumentRemoved]);
 
+  const handleClearAllDocuments = useCallback(async () => {
+    if (!apiKey?.trim()) {
+      handleError("API key is required to clear documents");
+      return;
+    }
+
+    if (documents.length === 0) {
+      return;
+    }
+
+    // Confirm clearing all documents
+    if (!window.confirm(`Are you sure you want to clear all ${documents.length} document(s)? This action cannot be undone and will reset your chat to general mode.`)) {
+      return;
+    }
+
+    setRemovingDocuments(new Set(['clearing-all']));
+
+    try {
+      await clearAllDocuments(apiKey);
+      
+      // Refresh documents and handle removal side effects
+      await handleDocumentRemoved();
+      
+      console.log('All documents cleared successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to clear all documents';
+      handleError(errorMessage);
+      console.error('Error clearing all documents:', error);
+    } finally {
+      setRemovingDocuments(new Set());
+    }
+  }, [apiKey, documents.length, handleError, handleDocumentRemoved]);
+
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -398,9 +431,32 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                   <h4 className="text-sm font-medium text-foreground">
                     Uploaded Documents ({documents.length})
                   </h4>
-                  {documentsLoading && (
-                    <Loader className="w-4 h-4 animate-spin text-muted-foreground" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {documentsLoading && (
+                      <Loader className="w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                    {documents.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearAllDocuments}
+                        disabled={removingDocuments.has('clearing-all')}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      >
+                        {removingDocuments.has('clearing-all') ? (
+                          <>
+                            <Loader className="w-3 h-3 animate-spin mr-1" />
+                            Clearing...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Clear All
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {documentsError && (

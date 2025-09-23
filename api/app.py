@@ -9,6 +9,8 @@ from openai import OpenAI
 import os
 import sys
 import re
+import uuid
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from io import BytesIO
@@ -198,17 +200,20 @@ class ErrorResponse(BaseModel):
 # Conversation Mode Management Models
 class ConversationModeRequest(BaseModel):
     api_key: str
+    session_id: Optional[str] = None
 
 class FallbackConfirmationRequest(BaseModel):
     query: str
     use_general_knowledge: bool
     api_key: str
+    session_id: Optional[str] = None
 
 class ConflictResolutionRequest(BaseModel):
     query: str
     selected_document_id: str
     confidence_scores: Dict[str, float]
     api_key: str
+    session_id: Optional[str] = None
 
 class ConversationModeResponse(BaseModel):
     status: str
@@ -228,7 +233,8 @@ class ConflictDetectionResponse(BaseModel):
     has_conflict: bool
     conflict_info: Optional[Dict[str, Any]]
 
-# Global variables for RAG system - store per API key
+# Global dictionary to store RAG service instances
+# Key: API key hash, Value: RAGService instance
 rag_services: Dict[str, RAGService] = {}
 
 # File size limit (50MB)
@@ -242,6 +248,7 @@ def get_rag_service(api_key: str) -> RAGService:
     import hashlib
     api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
     
+    # Create or get RAG service for this API key
     if api_key_hash not in rag_services:
         chunking_config = ChunkingConfig(chunk_size=1000, overlap=200)
         processing_limits = ProcessingLimits(max_file_size_mb=50)
@@ -250,6 +257,7 @@ def get_rag_service(api_key: str) -> RAGService:
             chunking_config=chunking_config,
             processing_limits=processing_limits
         )
+    
     return rag_services[api_key_hash]
 
 # Define the main chat endpoint that handles POST requests
@@ -315,7 +323,8 @@ async def rag_chat(request: RAGChatRequest):
 @app.post("/api/upload-document", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    api_key: str = Form(...)
+    api_key: str = Form(...),
+    session_id: Optional[str] = Form(None)
 ):
     try:
         # Check file size
@@ -363,7 +372,8 @@ async def upload_document(
 @app.post("/api/upload-documents", response_model=BatchUploadResponse)
 async def upload_documents(
     files: List[UploadFile] = File(...),
-    api_key: str = Form(...)
+    api_key: str = Form(...),
+    session_id: Optional[str] = Form(None)
 ):
     try:
         # Validate that files were provided
@@ -506,9 +516,9 @@ async def process_youtube(request: YouTubeRequest):
     try:
         rag = get_rag_service(request.api_key)
         
-        # Process YouTube URL
-        processed_doc = await rag.process_document(
-            source=request.url,
+        # Process YouTube URL but don't add to document management
+        processed_doc = await rag.process_youtube_for_chat(
+            url=request.url,
             use_page_aware_chunking=False  # YouTube transcripts don't need page-aware chunking
         )
         
@@ -516,32 +526,13 @@ async def process_youtube(request: YouTubeRequest):
         video_title = processed_doc.original_document.metadata.get('video_title', 
                      processed_doc.original_document.metadata.get('title', 'Unknown Video'))
         
-        # Auto-enter document mode if processing was successful
-        entered_document_mode = False
-        try:
-            # Get all processed documents
-            if rag.processed_documents:
-                # Convert processed documents to Document objects for conversation manager
-                documents = [doc.original_document for doc in rag.processed_documents.values()]
-                
-                # Enter document mode
-                session = rag.enter_document_mode(documents)
-                
-                # Update document chunks in session
-                for doc_id in rag.processed_documents.keys():
-                    rag.update_document_chunks_in_session(doc_id)
-                
-                entered_document_mode = True
-        except Exception as e:
-            # Don't fail the entire process if document mode entry fails
-            print(f"Warning: Failed to enter document mode after YouTube processing: {e}")
-        
+        # YouTube videos are processed for chat only, not added to document mode
         return YouTubeProcessResponse(
             status="success",
-            message=f"YouTube video processed successfully",
+            message=f"YouTube video processed successfully for chat",
             video_title=video_title,
             chunks_processed=len(processed_doc.chunks),
-            entered_document_mode=entered_document_mode
+            entered_document_mode=False  # YouTube doesn't enter document mode
         )
     
     except Exception as e:
@@ -592,6 +583,25 @@ async def remove_document(document_id: str, api_key: str):
     except HTTPException:
         # Re-raise HTTPException as-is (don't catch and convert to 500)
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
+
+# Clear all documents for a user
+@app.delete("/api/documents")
+async def clear_all_documents(api_key: str):
+    try:
+        # Get the API key hash
+        import hashlib
+        api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        
+        # Remove the entire RAG service instance for this API key
+        global rag_services
+        if api_key_hash in rag_services:
+            del rag_services[api_key_hash]
+            return {"status": "success", "message": "All documents cleared successfully"}
+        else:
+            return {"status": "success", "message": "No documents to clear"}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
@@ -859,6 +869,7 @@ async def resolve_conflict(request: ConflictResolutionRequest):
 async def health_check():
     from datetime import datetime
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
 
 # Entry point for running the application directly
 if __name__ == "__main__":

@@ -3,9 +3,11 @@
  * Supports both single and batch file uploads
  */
 
+
 export interface DocumentUploadRequest {
   files: File[];
   apiKey: string;
+  sessionId?: string;
 }
 
 export interface DocumentUploadResult {
@@ -304,6 +306,39 @@ export const removeDocument = async (
       throw new Error(`Failed to remove document: ${error.message}`);
     }
     throw new Error("Unknown error occurred while removing document");
+  }
+};
+
+/**
+ * Clears all documents from the system
+ * @param apiKey - The API key for authentication
+ * @returns Promise<{status: string, message: string}> - The clear response
+ */
+export const clearAllDocuments = async (
+  apiKey: string
+): Promise<{status: string, message: string}> => {
+  if (!apiKey?.trim()) {
+    throw new Error("API key is required");
+  }
+
+  const baseUrl = getBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/api/documents?api_key=${encodeURIComponent(apiKey)}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to clear all documents: ${error.message}`);
+    }
+    throw new Error("Unknown error occurred while clearing all documents");
   }
 };
 

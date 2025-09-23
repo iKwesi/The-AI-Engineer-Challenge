@@ -88,6 +88,9 @@ class RAGService:
         # Track processed documents
         self.processed_documents: Dict[str, ProcessedDocument] = {}
         
+        # Track YouTube content separately (for chat only, not document management)
+        self.youtube_content: Dict[str, ProcessedDocument] = {}
+        
         # Service statistics
         self.stats = {
             'documents_processed': 0,
@@ -181,6 +184,84 @@ class RAGService:
             
         except Exception as e:
             raise DocumentProcessingError(f"Failed to process document {source}: {e}")
+    
+    async def process_youtube_for_chat(
+        self, 
+        url: str, 
+        use_page_aware_chunking: bool = False,
+        **loader_kwargs
+    ) -> ProcessedDocument:
+        """
+        Process a YouTube video for chat only (not added to document management).
+        
+        Args:
+            url: YouTube URL to process
+            use_page_aware_chunking: Whether to use page-aware chunking
+            **loader_kwargs: Additional arguments for document loader
+            
+        Returns:
+            ProcessedDocument with chunks and metadata
+            
+        Raises:
+            DocumentProcessingError: If processing fails
+        """
+        try:
+            # Step 1: Load YouTube document
+            documents = self.document_factory.load_documents(url, **loader_kwargs)
+            if not documents:
+                raise DocumentProcessingError(f"No documents loaded from {url}")
+            
+            # For now, handle single document (can be extended for multiple)
+            document = documents[0]
+            
+            # Generate a unique ID for YouTube content
+            import hashlib
+            youtube_id = hashlib.md5(url.encode()).hexdigest()[:8]
+            document.document_id = f"youtube_{youtube_id}"
+            
+            # Mark as YouTube content in metadata
+            document.metadata['content_type'] = 'youtube_transcript'
+            document.metadata['source_url'] = url
+            
+            # Step 2: Chunk document (YouTube transcripts don't need page-aware chunking)
+            chunks = self._chunk_document_regular(document)
+            
+            # Step 3: Generate embeddings
+            await self._generate_embeddings(chunks)
+            
+            # Step 4: Store in vector database (for search functionality)
+            self._store_chunks(chunks)
+            
+            # Step 5: Create processed document
+            processed_doc = ProcessedDocument(
+                original_document=document,
+                chunks=chunks,
+                processing_metadata={
+                    'chunking_method': 'regular',
+                    'chunk_count': len(chunks),
+                    'processing_time': datetime.now().isoformat(),
+                    'content_type': 'youtube_transcript',
+                    'source_url': url,
+                    'chunking_config': {
+                        'chunk_size': self.chunking_config.chunk_size,
+                        'overlap': self.chunking_config.overlap,
+                        'preserve_sentences': self.chunking_config.preserve_sentences
+                    }
+                }
+            )
+            
+            # Store in YouTube content (separate from documents)
+            self.youtube_content[document.document_id] = processed_doc
+            
+            # Update statistics (but don't count as regular documents)
+            self.stats['chunks_created'] += len(chunks)
+            self.stats['embeddings_generated'] += len(chunks)
+            self.stats['last_activity'] = datetime.now().isoformat()
+            
+            return processed_doc
+            
+        except Exception as e:
+            raise DocumentProcessingError(f"Failed to process YouTube video {url}: {e}")
     
     def _chunk_document_regular(self, document: Document) -> List[Chunk]:
         """
