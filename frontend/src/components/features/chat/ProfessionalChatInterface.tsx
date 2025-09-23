@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown, Upload, Youtube } from 'lucide-react';
+import { ArrowUp, Loader, AlertCircle, Bot, User, Settings, KeyRound, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
@@ -13,8 +13,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import DocumentManager from '@/components/features/upload/DocumentManager';
-import { hasYouTubeUrls, detectYouTubeUrls } from '@/services/documentService';
 
 export interface ProfessionalChatInterfaceProps {
   messages: Message[];

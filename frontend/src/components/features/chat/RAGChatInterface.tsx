@@ -18,7 +18,7 @@ import { useDocumentContext } from '@/contexts/DocumentContext';
 import useDocumentUpload from '@/hooks/useDocumentUpload';
 
 // Helper function to detect if citations are from YouTube content
-const isYouTubeContent = (citations: any[]): boolean => {
+const isYouTubeContent = (citations: Array<{ chunk_id: string; document_name: string; document_id: string; content_preview: string }>): boolean => {
   return citations.some(citation => 
     citation.content_preview?.includes('=== YouTube Video:') ||
     citation.content_preview?.includes('=== Transcript ===') ||
@@ -446,16 +446,6 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
     }
   }, [apiKey, processYouTube]);
 
-  // Handle RAG mode entered
-  const handleRAGModeEntered = useCallback(() => {
-    // Optionally refresh conversation mode status or show notification
-    console.log('RAG mode entered');
-  }, []);
-
-  // Handle upload error
-  const handleUploadError = useCallback((error: string) => {
-    console.error('Upload error:', error);
-  }, []);
 
   // Check if we should show the welcome screen (no messages yet)
   const showWelcomeScreen = !messages || messages.length === 0;

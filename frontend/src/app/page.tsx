@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import SimpleChatInterface from '@/components/features/chat/SimpleChatInterface';
 import RAGChatInterface from '@/components/features/chat/RAGChatInterface';
-import { useChat } from '@/hooks/useChat';
+import { useChat, type Message, type FallbackRequest } from '@/hooks/useChat';
 import { DocumentProvider, useDocumentContext } from '@/contexts/DocumentContext';
 
 function ChatInterfaceSelector({ 
@@ -21,14 +21,14 @@ function ChatInterfaceSelector({
 }: { 
   apiKey: string; 
   setApiKey: (key: string) => void;
-  messages: any[];
+  messages: Message[];
   loading: boolean;
   error: string | null;
   inputValue: string;
   setInputValue: (value: string) => void;
   handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  pendingFallback: any;
-  handleFallbackConfirmation: any;
+  pendingFallback: FallbackRequest | null;
+  handleFallbackConfirmation: (confirmed: boolean) => void;
 }) {
   const { documents, isDocumentMode, refreshDocuments } = useDocumentContext();
 
