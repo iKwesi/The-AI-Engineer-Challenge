@@ -29,7 +29,11 @@ export interface RAGChatResponse {
   response?: string;
   usedContext?: boolean;
   needsFallback?: boolean;
-  fallbackRequest?: any;
+  fallbackRequest?: {
+    query: string;
+    explanation: string;
+    confidence_score: number;
+  };
   citations?: Array<{
     chunk_id: string;
     document_name: string;
@@ -434,8 +438,8 @@ export const sendSmartChatRequest = async (data: ChatRequest): Promise<RAGChatRe
         } else {
           console.warn('Failed to exit document mode:', exitResponse.status);
         }
-      } catch (error) {
-        console.warn('Error exiting document mode:', error);
+      } catch (exitError) {
+        console.warn('Error exiting document mode:', exitError);
       }
       
       // Use regular chat since we have no documents
@@ -467,8 +471,8 @@ export const sendSmartChatRequest = async (data: ChatRequest): Promise<RAGChatRe
           } else {
             console.warn('Failed to enter document mode:', enterModeResponse.status);
           }
-        } catch (error) {
-          console.warn('Error entering document mode:', error);
+    } catch (enterError) {
+      console.warn('Error entering document mode:', enterError);
         }
       }
       

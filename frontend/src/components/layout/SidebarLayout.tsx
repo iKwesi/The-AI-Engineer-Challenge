@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Upload, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { cn } from '@/lib/utils';
 import { DocumentManager } from '@/components/features/upload/DocumentManager';
@@ -20,7 +20,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
   onError
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(400);
+  const sidebarWidth = 400;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { 
-  processStreamingChat, 
   sendSmartChatRequest, 
   confirmFallback,
   getConversationStatus,
@@ -36,11 +35,9 @@ export function useChat() {
   const [inputValue, setInputValue] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [pendingFallback, setPendingFallback] = useState<FallbackRequest | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
 
   // Handle hydration - no localStorage persistence for API key
   useEffect(() => {
-    setIsHydrated(true);
     // API key is not persisted - users must enter it fresh each session
   }, []);
 
@@ -92,22 +89,22 @@ export function useChat() {
 
       if (response.needsFallback && response.fallbackRequest) {
         // Handle fallback scenario
+        const fallbackReq = response.fallbackRequest;
         setPendingFallback({
-          query: response.fallbackRequest.query,
-          explanation: response.fallbackRequest.explanation,
-          confidence_score: response.fallbackRequest.confidence_score
+          query: fallbackReq.query,
+          explanation: fallbackReq.explanation,
+          confidence_score: fallbackReq.confidence_score
         });
         
         // Add a message indicating fallback is needed
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `I couldn't find relevant information in your uploaded documents to answer: "${userMessage}"\n\n**Confidence Score:** ${(response.fallbackRequest.confidence_score * 100).toFixed(1)}%\n\n**Explanation:** ${response.fallbackRequest.explanation}\n\nWould you like me to answer using my general knowledge instead?`,
+          content: `I couldn't find relevant information in your uploaded documents to answer: "${userMessage}"\n\n**Confidence Score:** ${(fallbackReq.confidence_score * 100).toFixed(1)}%\n\n**Explanation:** ${fallbackReq.explanation}\n\nWould you like me to answer using my general knowledge instead?`,
           usedContext: false,
-          confidenceScore: response.fallbackRequest.confidence_score
+          confidenceScore: fallbackReq.confidence_score
         }]);
       } else {
-        // Add successful response with mode indicator
-        const modeIndicator = response.usedContext ? '📄 Document Mode' : '🌐 General Mode';
+        // Add successful response
         const responseContent = `${response.response || "No response received"}`;
         
         setMessages(prev => [...prev, { 

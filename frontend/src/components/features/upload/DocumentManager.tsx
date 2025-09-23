@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Youtube, X, Settings, AlertCircle, CheckCircle, Loader, Trash2 } from 'lucide-react';
+import { FileText, Youtube, X, AlertCircle, CheckCircle, Loader, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -177,9 +177,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
     try {
       await processYouTube(detectedUrls[0]);
-    } catch (error) {
-      // Error is already handled by the hook
-    }
+        } catch {
+          // Error is already handled by the hook
+        }
   }, [youtubeUrl, processYouTube, handleError]);
 
   const handleRemoveDocument = useCallback(async (documentId: string, documentName: string) => {
@@ -202,10 +202,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       await handleDocumentRemoved();
       
       console.log(`Document "${documentName}" removed successfully`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to remove document';
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove document';
       handleError(errorMessage);
-      console.error('Error removing document:', error);
+      console.error('Error removing document:', err);
     } finally {
       setRemovingDocuments(prev => {
         const newSet = new Set(prev);
@@ -239,10 +239,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       await handleDocumentRemoved();
       
       console.log('All documents cleared successfully');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to clear all documents';
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to clear all documents';
       handleError(errorMessage);
-      console.error('Error clearing all documents:', error);
+      console.error('Error clearing all documents:', err);
     } finally {
       setRemovingDocuments(new Set());
     }

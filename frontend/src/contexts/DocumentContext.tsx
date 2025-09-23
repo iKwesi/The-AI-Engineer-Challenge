@@ -54,19 +54,21 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
 
       // Filter out invalid documents and ensure all required properties exist
       // More lenient validation to handle different backend response formats
-      const validDocuments = (docResponse.documents || []).filter((doc: any) => {
-        if (!doc) return false;
+      const validDocuments = (docResponse.documents || []).filter((doc: unknown) => {
+        if (!doc || typeof doc !== 'object') return false;
+        
+        const docObj = doc as Record<string, unknown>;
         
         // Log the document structure for debugging
-        console.log('Document validation check:', doc);
+        console.log('Document validation check:', docObj);
         
         // Check for the actual backend field names
-        const hasId = (doc.document_id || doc.id) && typeof (doc.document_id || doc.id) === 'string' && (doc.document_id || doc.id).trim() !== '';
-        const hasName = (doc.filename || doc.name) && typeof (doc.filename || doc.name) === 'string' && (doc.filename || doc.name).trim() !== '';
+        const hasId = (docObj.document_id || docObj.id) && typeof (docObj.document_id || docObj.id) === 'string' && String(docObj.document_id || docObj.id).trim() !== '';
+        const hasName = (docObj.filename || docObj.name) && typeof (docObj.filename || docObj.name) === 'string' && String(docObj.filename || docObj.name).trim() !== '';
         
         // More flexible validation for other fields
-        const hasValidType = (doc.document_type || doc.type) !== undefined;
-        const hasValidChunks = (doc.chunk_count || doc.chunks) !== undefined && !isNaN(Number(doc.chunk_count || doc.chunks));
+        const hasValidType = (docObj.document_type || docObj.type) !== undefined;
+        const hasValidChunks = (docObj.chunk_count || docObj.chunks) !== undefined && !isNaN(Number(docObj.chunk_count || docObj.chunks));
         
         const isValid = hasId && hasName && hasValidType && hasValidChunks;
         
@@ -76,20 +78,25 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({ children, ap
             hasName,
             hasValidType,
             hasValidChunks,
-            doc
+            doc: docObj
           });
         }
         
         return isValid;
-      }).map((doc: any) => ({
-        // Normalize the document structure to match frontend expectations
-        id: String(doc.document_id || doc.id),
-        name: String(doc.filename || doc.name),
-        type: String(doc.document_type || doc.type || 'unknown'),
-        size: Number(doc.file_size || doc.size || doc.word_count || 0), // Prefer actual file size, fallback to word count
-        chunks: Number(doc.chunk_count || doc.chunks || 0),
-        uploaded_at: String(doc.processing_metadata?.processing_time || doc.uploaded_at || new Date().toISOString())
-      }));
+      }).map((doc: unknown) => {
+        const docObj = doc as Record<string, unknown>;
+        const processingMetadata = docObj.processing_metadata as Record<string, unknown> | undefined;
+        
+        return {
+          // Normalize the document structure to match frontend expectations
+          id: String(docObj.document_id || docObj.id),
+          name: String(docObj.filename || docObj.name),
+          type: String(docObj.document_type || docObj.type || 'unknown'),
+          size: Number(docObj.file_size || docObj.size || docObj.word_count || 0), // Prefer actual file size, fallback to word count
+          chunks: Number(docObj.chunk_count || docObj.chunks || 0),
+          uploaded_at: String(processingMetadata?.processing_time || docObj.uploaded_at || new Date().toISOString())
+        };
+      });
       
       console.log('DocumentContext refresh:', {
         validDocumentsCount: validDocuments.length,
