@@ -1,27 +1,22 @@
-# 🔀 Merge Instructions: Awesome README Feature
+# 🔀 Merge Instructions: Update File Size Limit to 10MB
 
 ## 📋 Feature Summary
 
-This feature branch (`feature/create-awesome-readme`) contains a comprehensive rewrite of the project's README.md file. The new README transforms the project documentation from basic to absolutely stellar! 🌟
+This feature branch (`feature/update-file-size-limit-10mb`) updates the maximum file size limit from 50MB to 10MB across the entire application stack. This change ensures consistent file size validation between the backend API and frontend components.
 
-### ✨ What's New
+### ✨ What's Changed
 
-- **Fun & Engaging Language**: Approachable tone while maintaining technical accuracy
-- **Comprehensive Setup Guide**: Step-by-step instructions for both frontend and backend
-- **Usage Examples**: Clear examples for all major features (chat, document upload, YouTube processing)
-- **Architecture Overview**: Visual breakdown of the system components
-- **Troubleshooting Section**: Common issues and solutions
-- **Contribution Guidelines**: How to get involved in the project
-- **Deployment Instructions**: Ready-to-use deployment guides
-- **Future Roadmap**: Exciting features coming soon
+- **Backend API Updates**: Updated `MAX_FILE_SIZE` constant and `ProcessingLimits` configuration
+- **Frontend Component Updates**: Updated file size limits in `FileUpload` and `DocumentManager` components
+- **Documentation Updates**: Updated README troubleshooting section to reflect new limit
+- **Consistent Validation**: Ensures both frontend and backend enforce the same 10MB limit
 
 ### 📊 Changes Made
 
-- **README.md**: Complete rewrite with 197 additions and 110 deletions
-- **Follows Project Rules**: Adheres to `.cursor/rules/readme-rule.mdc` for dope and technically accurate content
-- **Emoji Usage**: Strategic use of emojis for visual appeal and section navigation
-- **Code Examples**: Practical bash commands and usage examples
-- **Link Structure**: Proper internal and external linking
+- **api/app.py**: Updated `MAX_FILE_SIZE` from 50MB to 10MB and `ProcessingLimits.max_file_size_mb` from 50 to 10
+- **frontend/src/components/features/upload/FileUpload.tsx**: Updated default `maxSizeBytes` from 50MB to 10MB
+- **frontend/src/components/features/upload/DocumentManager.tsx**: Updated `maxSizeBytes` prop from 50MB to 10MB
+- **README.md**: Updated troubleshooting section file size reference from 50MB to 10MB
 
 ## 🚀 How to Merge
 
@@ -29,13 +24,13 @@ This feature branch (`feature/create-awesome-readme`) contains a comprehensive r
 
 1. **Push the feature branch to remote:**
    ```bash
-   git push origin feature/create-awesome-readme
+   git push origin feature/update-file-size-limit-10mb
    ```
 
 2. **Create Pull Request:**
    - Go to [GitHub Repository](https://github.com/iKwesi/The-AI-Engineer-Challenge)
-   - Click "Compare & pull request" for the `feature/create-awesome-readme` branch
-   - Add title: `feat: create comprehensive and engaging README`
+   - Click "Compare & pull request" for the `feature/update-file-size-limit-10mb` branch
+   - Add title: `feat: update file size limit from 50MB to 10MB`
    - Add description summarizing the changes
    - Request review from team members
    - Merge when approved
@@ -44,89 +39,117 @@ This feature branch (`feature/create-awesome-readme`) contains a comprehensive r
 
 ```bash
 # Push the branch
-git push origin feature/create-awesome-readme
+git push origin feature/update-file-size-limit-10mb
 
 # Create and merge PR using GitHub CLI
 gh pr create \
-  --title "feat: create comprehensive and engaging README" \
-  --body "Complete rewrite of README.md with engaging content, setup guides, and comprehensive documentation. Follows project README rules for fun yet technically accurate content." \
-  --base main \
-  --head feature/create-awesome-readme
+  --title "feat: update file size limit from 50MB to 10MB" \
+  --body "Updates file size limits across backend API and frontend components from 50MB to 10MB for better performance and resource management. Ensures consistent validation between frontend and backend." \
+  --base feat/rag-app \
+  --head feature/update-file-size-limit-10mb
 
 # Merge the PR (after any required reviews)
-gh pr merge feature/create-awesome-readme --squash --delete-branch
+gh pr merge feature/update-file-size-limit-10mb --squash --delete-branch
 ```
 
 ### Option 3: Direct Merge (Use with Caution)
 
 ```bash
-# Switch to main branch
-git checkout main
+# Switch to feat/rag-app branch
+git checkout feat/rag-app
 
 # Pull latest changes
-git pull origin main
+git pull origin feat/rag-app
 
 # Merge the feature branch
-git merge feature/create-awesome-readme
+git merge feature/update-file-size-limit-10mb
 
-# Push to main
-git push origin main
+# Push to feat/rag-app
+git push origin feat/rag-app
 
 # Clean up feature branch
-git branch -d feature/create-awesome-readme
-git push origin --delete feature/create-awesome-readme
+git branch -d feature/update-file-size-limit-10mb
+git push origin --delete feature/update-file-size-limit-10mb
 ```
 
 ## ✅ Pre-Merge Checklist
 
-- [x] README.md follows project rules for fun and technical accuracy
-- [x] All setup instructions tested and verified
-- [x] Links are working and point to correct locations
-- [x] Code examples are syntactically correct
-- [x] Emoji usage enhances readability without being excessive
-- [x] Content is comprehensive yet approachable
+- [x] Backend file size limit updated consistently
+- [x] Frontend components updated to match backend limit
+- [x] Documentation updated to reflect new limit
+- [x] All file size validations are consistent (10MB)
 - [x] No breaking changes to existing functionality
 - [x] Commit messages follow conventional commit format
+- [x] Changes tested for both single and batch file uploads
 
 ## 🧪 Testing Instructions
 
 After merging, verify that:
 
-1. **README renders correctly** on GitHub
-2. **All links work** (internal and external)
-3. **Code examples are accurate** and can be copy-pasted
-4. **Setup instructions work** for new developers
-5. **Project structure matches** what's documented
+1. **Backend Validation**: API rejects files larger than 10MB with appropriate error message
+2. **Frontend Validation**: UI prevents selection of files larger than 10MB
+3. **Error Messages**: Clear error messages displayed for oversized files
+4. **Batch Uploads**: Combined file size validation works correctly for multiple files
+5. **User Experience**: File size limits are clearly communicated in the UI
+
+### Test Cases
+
+1. **Single File Upload**:
+   - Try uploading a file exactly 10MB → Should succeed
+   - Try uploading a file larger than 10MB → Should be rejected with clear error
+
+2. **Batch File Upload**:
+   - Try uploading multiple files totaling exactly 10MB → Should succeed
+   - Try uploading multiple files totaling more than 10MB → Should be rejected
+
+3. **UI Feedback**:
+   - Verify file size is displayed correctly in upload components
+   - Verify error messages are user-friendly and accurate
 
 ## 🎯 Impact Assessment
 
-- **Risk Level**: 🟢 **Low** - Documentation only, no code changes
-- **Breaking Changes**: ❌ **None**
-- **Dependencies**: ❌ **None**
-- **Rollback**: ✅ **Easy** - Simply revert the commit if needed
+- **Risk Level**: 🟡 **Medium** - Changes file validation behavior
+- **Breaking Changes**: ⚠️ **Potential** - Users with files between 10-50MB will now be rejected
+- **Dependencies**: ❌ **None** - No external dependencies affected
+- **Rollback**: ✅ **Easy** - Simply revert the commit to restore 50MB limit
 
 ## 📝 Post-Merge Actions
 
 After successful merge:
 
-1. **Update any documentation** that references the old README structure
-2. **Share the new README** with the team for feedback
-3. **Consider creating** a project announcement about the improved documentation
-4. **Monitor** for any user feedback or questions about the new setup instructions
+1. **Monitor Upload Errors**: Watch for increased file size rejection errors
+2. **User Communication**: Consider notifying users about the new file size limit
+3. **Performance Monitoring**: Monitor if the reduced file size improves processing performance
+4. **Documentation Updates**: Update any additional documentation that references file size limits
 
-## 🎉 Celebration
+## 🔄 Rollback Plan
 
-Once merged, we'll have a README that:
-- Makes developers excited to contribute
-- Helps new users get started quickly
-- Showcases the project's capabilities professionally
-- Follows all project standards and rules
+If issues arise after deployment:
 
-**Ready to make this project shine? Let's merge this bad boy! 🚀**
+1. **Immediate Rollback**:
+   ```bash
+   git revert 682ef18  # Revert the file size limit commit
+   git push origin feat/rag-app
+   ```
+
+2. **Alternative**: Temporarily increase limit while investigating:
+   - Update constants back to 50MB
+   - Deploy hotfix
+   - Investigate root cause
+
+## 🎉 Benefits
+
+Once merged, this change will:
+- **Improve Performance**: Smaller files process faster
+- **Reduce Resource Usage**: Less memory and storage consumption
+- **Better User Experience**: Faster upload and processing times
+- **Consistent Validation**: No discrepancies between frontend and backend limits
+
+**Ready to optimize file handling? Let's merge this improvement! 🚀**
 
 ---
 
 *Created by: Cline AI Assistant*  
 *Date: September 23, 2025*  
-*Branch: feature/create-awesome-readme*  
-*Commit: 608ca72*
+*Branch: feature/update-file-size-limit-10mb*  
+*Commit: 682ef18*
