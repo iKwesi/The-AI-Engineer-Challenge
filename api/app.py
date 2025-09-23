@@ -534,7 +534,22 @@ async def process_youtube(request: YouTubeRequest):
 async def list_documents(api_key: str):
     try:
         rag = get_rag_service(api_key)
-        documents = rag.list_documents()
+        raw_documents = rag.list_documents()
+        
+        # Transform documents to match frontend expectations
+        documents = []
+        for doc in raw_documents:
+            if doc:  # Skip None documents
+                transformed_doc = {
+                    "id": doc.get("document_id", ""),
+                    "name": doc.get("filename", "unknown"),
+                    "type": doc.get("document_type", "unknown"),
+                    "size": doc.get("word_count", 0),  # Use word_count as size fallback
+                    "chunks": doc.get("chunk_count", 0),
+                    "uploaded_at": doc.get("processing_metadata", {}).get("processing_time", "")
+                }
+                documents.append(transformed_doc)
+        
         return {"documents": documents}
     
     except Exception as e:
