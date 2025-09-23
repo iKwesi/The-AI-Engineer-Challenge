@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { hasYouTubeUrls, detectYouTubeUrls, processYouTubeUrl } from '@/services/documentService';
+import { useDocumentContext } from '@/contexts/DocumentContext';
 
 // Helper function to detect if citations are from YouTube content
 const isYouTubeContent = (citations: any[]): boolean => {
@@ -406,6 +407,9 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
     setIsDropdownOpen(false);
   };
 
+  // Get document context for refreshing after YouTube processing
+  const { refreshDocuments } = useDocumentContext();
+
   // Handle YouTube processing
   const handleYouTubeProcess = useCallback(async (url: string) => {
     if (!apiKey?.trim()) {
@@ -414,15 +418,20 @@ const RAGChatInterface: React.FC<RAGChatInterfaceProps> = ({
 
     setIsProcessingYouTube(true);
     try {
-      await processYouTubeUrl(url, apiKey);
+      const result = await processYouTubeUrl(url, apiKey);
       setYoutubeDetection({ urls: [], show: false });
-      // Optionally show success message or refresh document mode status
+      
+      // Refresh documents to detect the new YouTube content and switch to RAG mode
+      console.log('YouTube processing completed, refreshing documents...');
+      await refreshDocuments();
+      
+      console.log('YouTube processing successful:', result);
     } catch (error) {
       console.error('YouTube processing failed:', error);
     } finally {
       setIsProcessingYouTube(false);
     }
-  }, [apiKey]);
+  }, [apiKey, refreshDocuments]);
 
   // Handle document mode entered
   const handleDocumentModeEntered = useCallback(() => {
